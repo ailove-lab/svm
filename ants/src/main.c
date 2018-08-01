@@ -69,16 +69,36 @@ void ant_draw(ant* a) {
        {p.x - n.x + t.x/2.0, p.y - n.y+t.y/2.0}, 
        {p.x + n.x, p.y + n.y},
     };
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderDrawLines(renderer, points, 4);
-    SDL_RenderPresent(renderer);
 }
 
+void ant_kick(ant* a) {
+    if (rand()%100>95) a->f = a->n;
+    else a->f = (v2){0.0, 0.0}; 
+    
+    if (rand()%100>95) a->af = (50-rand()%100)/500.0;
+    else a->af = 0.0; 
+}
+
+float rnd(float r) {return rand()%1000/1000.0*r;}
+
+void render_ants(ant* ants) {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    for(int i=0; i<10; i++){
+        ant_kick  (&ants[i]);
+        ant_update(&ants[i]);
+        ant_draw  (&ants[i]);
+    }
+}
 
 int main(int argc, char* argv[]) {
 
-    ant a={.m=10, .p={100.0, 100.0}, .a=0.0};
-    ant_update(&a);
+    ant ants[10];
+    for(int i=0; i<10; i++) {
+        ants[i] = (ant){.m=10, .p={rnd(WIDTH), rnd(HEIGHT)}, .a=rnd(PI2)};
+        ant_update(&ants[i]);
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 
@@ -90,16 +110,10 @@ int main(int argc, char* argv[]) {
 
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
                 SDL_RenderClear(renderer);
+                render_ants(ants);
 
-                if (rand()%100>95) a.f = a.n;
-                else a.f = (v2){0.0, 0.0}; 
+                SDL_RenderPresent(renderer);
                 
-                if (rand()%100>95) a.af = (50-rand()%100)/500.0;
-                else a.af = 0.0; 
-
-                ant_update(&a);
-                ant_draw(&a);
-
                 while (SDL_PollEvent(&event)) {
                     if (event.type == SDL_QUIT) {
                         done = SDL_TRUE;
