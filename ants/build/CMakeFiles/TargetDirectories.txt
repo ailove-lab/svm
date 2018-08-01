@@ -1,3 +1,0 @@
-/home/peko/lab/svm/boids/build/CMakeFiles/rebuild_cache.dir
-/home/peko/lab/svm/boids/build/CMakeFiles/main.dir
-/home/peko/lab/svm/boids/build/CMakeFiles/edit_cache.dir
