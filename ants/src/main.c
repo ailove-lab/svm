@@ -24,14 +24,19 @@ typedef struct {
 
     // normal
     v2 n;    
-} ant;
+} ant_t;
+
+typedef struct {
+    v2 p;
+    float a;
+} food_t;
 
 void v2_mul(v2* a, float k) {
     a->x*=k;
     a->y*=k;
 }
 
-void ant_update(ant* a) {
+void ant_update(ant_t* a) {
     
     // linear motion
     a->v.x+= a->f.x/a->m;
@@ -57,11 +62,11 @@ void ant_update(ant* a) {
     a->n.y = cos(a->a);
 }
 
-void ant_draw(ant* a) {
-    float s = 20.0;
+void ant_draw(ant_t* a) {
+    float s = 10.0;
     v2 p = a->p;
     v2 n = a->n;
-    v2_mul(&n, 10.0);
+    v2_mul(&n, s);
     v2 t = {n.y, -n.x}; // perpendiuclar to normal
     SDL_Point points[] = {
        {p.x + n.x, p.y + n.y},
@@ -72,7 +77,22 @@ void ant_draw(ant* a) {
     SDL_RenderDrawLines(renderer, points, 4);
 }
 
-void ant_kick(ant* a) {
+void food_draw(food_t* f) {
+    float s = 5.0;
+    v2 p = f->p;
+    v2 n = {sin(f->a), cos(f->a)}; 
+    v2_mul(&n, s);
+    SDL_Point points[] = {
+       {p.x + n.x, p.y + n.y},
+       {p.x + n.y, p.y - n.x},
+       {p.x - n.x, p.y - n.y},
+       {p.x - n.y, p.y + n.x},
+       {p.x + n.x, p.y + n.y},
+    };
+    SDL_RenderDrawLines(renderer, points, 5);
+}
+
+void ant_kick(ant_t* a) {
     if (rand()%100>95) a->f = a->n;
     else a->f = (v2){0.0, 0.0}; 
     
@@ -82,7 +102,7 @@ void ant_kick(ant* a) {
 
 float rnd(float r) {return rand()%1000/1000.0*r;}
 
-void render_ants(ant* ants) {
+void ants_render(ant_t* ants) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
 
     for(int i=0; i<10; i++){
@@ -92,13 +112,39 @@ void render_ants(ant* ants) {
     }
 }
 
-int main(int argc, char* argv[]) {
-
-    ant ants[10];
-    for(int i=0; i<10; i++) {
-        ants[i] = (ant){.m=10, .p={rnd(WIDTH), rnd(HEIGHT)}, .a=rnd(PI2)};
+void generate_ants(ant_t* ants, int cnt) {
+    for(int i=0; i<cnt; i++) {
+        ants[i] = (ant_t){.m=10, .p={rnd(WIDTH), rnd(HEIGHT)}, .a=rnd(PI2)};
         ant_update(&ants[i]);
     }
+}
+
+void generate_food(food_t* food, int cnt) {
+    for(int i=0; i<cnt; i++) {
+        food[i] = (food_t){.p={rnd(WIDTH), rnd(HEIGHT)}, .a=rnd(PI2)};
+    }
+}
+
+void food_render(food_t* food) {
+    SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
+
+    for(int i=0; i<10; i++){
+        food_draw(&food[i]);
+    }
+}
+
+void render() {
+    ants_render(ants);
+    food_render(food);
+}
+
+int main(int argc, char* argv[]) {
+
+    ant_t  ants[10];
+    food_t food[10];
+    
+    generate_ants(ants, 10);
+    generate_food(food, 10);
 
     if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 
@@ -110,8 +156,8 @@ int main(int argc, char* argv[]) {
 
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
                 SDL_RenderClear(renderer);
-                render_ants(ants);
 
+                
                 SDL_RenderPresent(renderer);
                 
                 while (SDL_PollEvent(&event)) {
