@@ -9,6 +9,28 @@
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 
+/*
+
+ant perception
+
+   velocity
+   x,y
+
+   objects around
+
+      landscape[]
+
+      food[]
+         direction
+         distnace
+
+      ants[]
+         direction
+         distnace
+
+*/
+
+
 typedef struct {
     float x, y;
 } v2;
