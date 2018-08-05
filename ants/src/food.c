@@ -1,4 +1,8 @@
+#include <SDL2/SDL.h>
+
 #include "food.h"
+
+extern SDL_Renderer* renderer;
 
 void food_draw(food_t* f) {
     float s = 5.0;

@@ -1,9 +1,11 @@
 #pragma once
 
-typedef struct ant_t ant_t;
-typedef struct food_t food_t;
+// #include "ant.h"
+#include "food.h"
 
-typedef struct {
+typedef struct ant_t ant_t;
+
+typedef struct world_t {
     ant_t*  ants;
     food_t* food;
     int food_count;

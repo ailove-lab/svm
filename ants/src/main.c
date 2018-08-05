@@ -3,40 +3,12 @@
 
 #include "world.h"
 
-
-#define WIDTH  800
-#define HEIGHT 800
-
-SDL_Window* window = NULL;
+SDL_Window*   window   = NULL;
 SDL_Renderer* renderer = NULL;
-
-/*
-
-ant perception
-
-   velocity
-   x,y
-
-   objects around
-
-      landscape[]
-
-      food[]
-         direction
-         distnace
-
-      ants[]
-         direction
-         distnace
-
-*/
-
-
 
 int main(int argc, char* argv[]) {
 
-    world_t* world = world_create(10,10);
-
+    world_t* world = world_create(5, 5);
 
     if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 
