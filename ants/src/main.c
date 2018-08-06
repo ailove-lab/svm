@@ -8,7 +8,7 @@ SDL_Renderer* renderer = NULL;
 
 int main(int argc, char* argv[]) {
 
-    world_t* world = world_create(5, 5);
+    world_t* world = world_create(5, 10);
 
     if (SDL_Init(SDL_INIT_VIDEO) == 0) {
 

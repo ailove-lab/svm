@@ -7,12 +7,14 @@
 #define PI2 PI*2.0
 
 typedef struct v2 {
-    float x, y;
+    double x, y;
 } v2;
 
-void clamp_angle(float* a);
-void v2_mul(v2* a, float k);
-float v2_len(v2* a);
-float rnd(float r);
+void clamp_angle(double* a);
+void   v2_mul(v2* a, double k);
+void   v2_nrm(v2* a);
+void   v2_rot(v2* a, double b);
+double v2_len(v2* a);
+double rnd(double r);
 
 void draw_vector(v2* a, v2* b);

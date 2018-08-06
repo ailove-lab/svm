@@ -2,27 +2,65 @@
 
 #include "utils.h"
 #include "world.h"
+#include "brain.h"
 #include "ant.h"
 #include "food.h"
 
 #define a_f  (ant->features)
-#define a_vx (a_f[VISION_RESOLUTION+0])
-#define a_vy (a_f[VISION_RESOLUTION+1])
-#define a_va (a_f[VISION_RESOLUTION+2])
-#define a_fx (a_f[VISION_RESOLUTION+3])
-#define a_fy (a_f[VISION_RESOLUTION+4])
-#define a_fa (a_f[VISION_RESOLUTION+5])
-#define a_sc (a_f[VISION_RESOLUTION+6])
+
+// Y
+#define a_fx (a_f[0])
+#define a_fy (a_f[1])
+#define a_fa (a_f[2])
+
+// X Vision 
+#define a_vs (&a_f[3])
+
+// X Introspection
+#define a_vx (ant->v.y)
+#define a_vy (ant->v.x)
+#define a_va (ant->va )
+#define a_sc (ant->sc )
+
+#define a_p  (ant->p  )
 #define a_px (ant->p.x)
 #define a_py (ant->p.y)
 #define a_a  (ant->a  )
 #define a_n  (ant->n  )
 #define a_nx (ant->n.x)
 #define a_ny (ant->n.y)
+#define a_m  (ant->m  )
+
+#define a_mem (ant->memory)
+#define a_mid (ant->mid)
+#define a_max_dsc (ant->max_dsc)
+
+#define a_b (ant->brain)
 
 extern SDL_Renderer* renderer;
 
-static float friction = 0.95;
+static double friction = 0.95;
+
+static void think(ant_t* ant) {
+    if (true) {
+    // if(!a_b->trained) {
+        v2 f = {0.0, 0.0};
+        for(int i=0; i<VISION_RESOLUTION; i++) {
+            double a = (double)i/VISION_RESOLUTION*PI2-PI;
+            f.x+= cos(a)*a_vs[i];
+            f.y+= sin(a)*a_vs[i];
+        }
+        // v2_nrm(&f);
+        a_fx = f.x/10.0;
+        a_fy = f.y/10.0;
+        a_fa = -atan2(f.y, f.x)/100.0;
+    } else {
+        brain_predict(a_b, a_f);
+        if(isnan(a_fx)) a_fx=0.0;
+        if(isnan(a_fy)) a_fy=0.0;
+        if(isnan(a_fa)) a_fa=0.0;
+    };
+}
 
 static void update(ant_t* ant) { 
 
@@ -33,10 +71,8 @@ static void update(ant_t* ant) {
     a_vy*= friction;
 
     // project from local to world
-    v2 v = {
-        a_vx*cos(ant->a) - a_vy*sin(ant->a),
-        a_vx*sin(ant->a) - a_vy*cos(ant->a),
-    };
+    v2 v = {a_vx, a_vy};
+    v2_rot(&v, ant->a);
     
     a_px += v.x;
     a_py += v.y;
@@ -51,12 +87,17 @@ static void update(ant_t* ant) {
     ant->a+= a_va;
     clamp_angle(&a_a);
     // normal
-    a_nx = sin(a_a);
-    a_ny = cos(a_a);
+    a_nx = cos(a_a);
+    a_ny = sin(a_a);
 }
 
 static void render(ant_t* ant) {
-    float s = 10.0;
+    if (a_b->trained) {
+        SDL_SetRenderDrawColor(renderer, 128, 255, 128, SDL_ALPHA_OPAQUE);
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 128, 128, SDL_ALPHA_OPAQUE);
+    };
+    double s = 10.0;
     SDL_Point points[] = {
        {a_px + a_nx*s             , a_py + a_ny*s             },
        {a_px - a_nx*s - a_ny*s/2.0, a_py - a_ny*s + a_nx*s/2.0},
@@ -68,38 +109,38 @@ static void render(ant_t* ant) {
 
 
 // map some vector+value to perception array
-static void perception_map(ant_t* ant, v2 t, float v) {
+static void perception_map(ant_t* ant, v2 t, double v) {
    // angle of target vector
-   float a1 = atan2(a_ny, a_nx);
-   float a2 = atan2(t.y, t.x);
-   float a3 = a2-a1;
+   double a1 = atan2(a_ny, a_nx);
+   double a2 = atan2(t.y, t.x);
+   double a3 = a1-a2;
    clamp_angle(&a3);
    a3/=PI2/VISION_RESOLUTION;
    a3+=VISION_RESOLUTION/2;
    // antialias angle between near cells
    int i0 = floor(a3);
    int i1 = ceil (a3);
-   float k0 = i1-a3;
-   float k1 = a3-i0;
+   double k0 = i1-a3;
+   double k1 = a3-i0;
    i1%=VISION_RESOLUTION;
    // printf("% 4.2f [% 02d % 4.2f] [% 02d % 4.2f]", a3, i0, k0, i1, k1);       
    // angle between head vector and target vector
-   a_f[i0]+=v*k0;
-   a_f[i1]+=v*k1;
+   a_vs[i0]+=v*k0;
+   a_vs[i1]+=v*k1;
 }
 
 static void vision_update(ant_t* ant, world_t* world) {
 
-    for(int i=0; i<VISION_RESOLUTION; i++) a_f[i] = 0.0;
+    for(int i=0; i<VISION_RESOLUTION; i++) a_vs[i] = 0.0;
 
-    ant_t* ants = world->ants; 
+    ant_t** ants = world->ants; 
 	for(int i=0; i<world->ants_count; i++) {
-        ant_t* aa = &ants[i];
+        ant_t* aa = ants[i];
         // the same ant
         if(a_px == aa->p.x && a_py == aa->p.y) continue;
         v2 t = {aa->p.x - a_px, aa->p.y - a_py};
-        float l = v2_len(&t)/VISION_RANGE;
-        float v = -1.0/(1.0+l*l);
+        double l = v2_len(&t)/VISION_RANGE;
+        double v = -1.0/(1.0+l*l);
         perception_map(ant, t, v);
 	}
     
@@ -107,28 +148,44 @@ static void vision_update(ant_t* ant, world_t* world) {
 	for(int i=0; i<world->food_count; i++) {
         // vector from ant to food
         v2 t = {food[i].p.x - a_px, food[i].p.y - a_py};
-        float l = v2_len(&t)/VISION_RANGE;
-        float v = 1.0/(1.0+l*l);
+        double l = v2_len(&t)/VISION_RANGE;
+        double v = 1.0/(1.0+l*l);
         perception_map(ant, t, v);
 	}
 
+	double old_sc = a_sc;
 	a_sc = 0.0;
 	for(int i=0; i<VISION_RESOLUTION; i++) {
-        a_sc += a_f[i]; 
+        a_sc += a_vs[i]*cos(PI+(double)i/VISION_RESOLUTION*PI2); 
 	}
-	
+	// delta score
+    double dsc = a_sc - old_sc;
+	if((!a_b->trained && dsc>0.0)|| (a_b->trained && dsc>a_max_dsc)){
+    	printf("% 03d: % 3.2f\n", a_mid, dsc);
+    	a_max_dsc = dsc;
+    	memcpy(&a_mem[a_mid*MEMORY_STEP], a_f, sizeof(double)*MEMORY_STEP);
+    	a_mid = (a_mid+1)%MEMORY_SIZE;
+    	if(a_mid == 0){
+        	printf("train\n");
+        	brain_train(a_b, a_mem, MEMORY_SIZE);
+    	}
+	} 
 }
 
 static void ant_vision_render(ant_t* ant) {
     Uint8 r,g,b;
     b = 48;
+    v2 f = {a_fx, a_fy};
+    v2_rot(&f, a_a); v2_nrm(&f); v2_mul(&f, 50.0);
+    draw_vector(&a_p, &f);
 	for(int i=0; i<VISION_RESOLUTION; i++) {
-        if      (a_f[i] > 0.0) { r=0           ; g = a_f[i]*255;}
-        else if (a_f[i] < 0.0) { r =-a_f[i]*255; g = 0         ;}
-        else                   { r = 0         ; g = 0         ;}
-        float a = (0.5-(float)i/VISION_RESOLUTION)*PI*2.0;
-        float dx = 30.0*sin(a+a_a);
-        float dy = 30.0*cos(a+a_a);
+    	// a_vs[i] = cos(PI+(double)i/VISION_RESOLUTION*PI2);
+        if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
+        else if (a_vs[i] < 0.0) { r =-a_vs[i]*255; g = 0         ;}
+        else                    { r = 0          ; g = 0         ;}
+        double a = (0.5-(double)i/VISION_RESOLUTION)*PI*2.0;
+        double dx = 30.0*cos(a+a_a);
+        double dy = 30.0*sin(a+a_a);
         int d = 4;
         SDL_Rect rect = {a_px+dx-d/2, a_py+dy-d/2, d, d};
         SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
@@ -136,33 +193,38 @@ static void ant_vision_render(ant_t* ant) {
 	}
 }
 
-static void ant_kick(ant_t* ant) {
-    if (rand()%100>95) a_fy = -1.0;
-    else a_fy = 0.0;
-    
-    if (rand()%100>95) a_fa = (50-rand()%100)/500.0;
-    else a_fa = 0.0;
+/// INTERFACE ///
+
+ant_t* ant_create() {
+    ant_t* ant = calloc(1, sizeof(ant_t));
+    a_b = brain_create(Y_COUNT, X_COUNT);
+    a_px = rand()%WIDTH;
+    a_py = rand()%HEIGHT;
+    a_m  = 10.0;
+    return ant;
 }
 
-/// INTERFACE ///
+void ant_delete(ant_t* ant) {
+    free(a_b);
+    free(ant);
+}
 
 void ants_update(world_t* world) { 
 	for(int i=0; i<world->ants_count; i++) {
-        ant_kick(&world->ants[i]);
-        update(&world->ants[i]);
-        vision_update(&world->ants[i], world);
+        vision_update(world->ants[i], world);
+        think(world->ants[i]);
+        update(world->ants[i]);
 	}
 }
 
-void ants_render(ant_t* ants, int n) {
-    SDL_SetRenderDrawColor(renderer, 255, 128, 128, SDL_ALPHA_OPAQUE);
+void ants_render(ant_t** ants, int n) {
     for(int i=0; i<n; i++){
-        render  (&ants[i]);
+        render(ants[i]);
     }
 }
 
-void ants_vision_render(ant_t* ants, int n) {
+void ants_vision_render(ant_t** ants, int n) {
 	for(int i=0; i<n; i++) {
-    	ant_vision_render(&ants[i]);
+    	ant_vision_render(ants[i]);
 	}
 }

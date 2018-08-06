@@ -6,7 +6,7 @@
 typedef struct ant_t ant_t;
 
 typedef struct world_t {
-    ant_t*  ants;
+    ant_t** ants;
     food_t* food;
     int food_count;
     int ants_count;
