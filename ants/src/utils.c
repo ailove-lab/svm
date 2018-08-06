@@ -37,10 +37,10 @@ void v2_rot(v2* a, double b) {
 void draw_vector(v2* a, v2* b) {  
     v2 n = *b;
     v2_nrm(&n);
-    v2_mul(&n, 10.0);
+    v2_mul(&n, 6.0);
     v2 t = {b->y, -b->x};
     v2_nrm(&t);
-    v2_mul(&t, 5.0);
+    v2_mul(&t, 3.0);
     v2 p0 = *a;
     v2 p1 = {a->x + b->x, a->y + b->y};
     SDL_Point points[] = {

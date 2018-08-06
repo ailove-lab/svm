@@ -2,12 +2,12 @@
 
 #include "utils.h"
 
-#define VISION_RESOLUTION 8
+#define VISION_RESOLUTION 16
 #define INTROSPECTION     4
 #define Y_COUNT           3
 #define X_COUNT           VISION_RESOLUTION
 #define VISION_RANGE      200.0
-#define MEMORY_SIZE       100
+#define MEMORY_SIZE       1000
 #define MEMORY_STEP       (Y_COUNT + X_COUNT)
 
 typedef struct world_t world_t;
@@ -15,6 +15,8 @@ typedef struct brain_t brain_t;
 
 typedef struct ant_t {
 
+    int id;
+    
     brain_t* brain;
     
     // mass
@@ -34,7 +36,7 @@ typedef struct ant_t {
     double va;
    
     
-    double features[MEMORY_STEP];
+    double data[MEMORY_STEP];
    
     // storage for best actions
 

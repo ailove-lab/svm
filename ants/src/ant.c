@@ -6,15 +6,16 @@
 #include "ant.h"
 #include "food.h"
 
-#define a_f  (ant->features)
+#define a_id (ant->id  )
+#define a_d  (ant->data)
 
 // Y
-#define a_fx (a_f[0])
-#define a_fy (a_f[1])
-#define a_fa (a_f[2])
+#define a_fx (a_d[0])
+#define a_fy (a_d[1])
+#define a_fa (a_d[2])
 
 // X Vision 
-#define a_vs (&a_f[3])
+#define a_vs (&a_d[3])
 
 // X Introspection
 #define a_vx (ant->v.y)
@@ -41,21 +42,32 @@ extern SDL_Renderer* renderer;
 
 static double friction = 0.95;
 
+static void print_data(ant_t* ant) {
+   printf("["); 
+   for(int i=0; i<Y_COUNT; i++) printf("% 4.2f ", a_d[i]); 
+   printf("] < [");
+   for(int i=Y_COUNT; i< Y_COUNT + X_COUNT; i++) printf("% 4.2f ", a_d[i]);
+   printf("]\n"); 
+}
+
+
 static void think(ant_t* ant) {
-    if (true) {
-    // if(!a_b->trained) {
+    // simple attractor
+    // if (true) {
+    if(!a_b->trained) {
         v2 f = {0.0, 0.0};
         for(int i=0; i<VISION_RESOLUTION; i++) {
             double a = (double)i/VISION_RESOLUTION*PI2-PI;
             f.x+= cos(a)*a_vs[i];
             f.y+= sin(a)*a_vs[i];
         }
-        // v2_nrm(&f);
-        a_fx = f.x/10.0;
-        a_fy = f.y/10.0;
-        a_fa = -atan2(f.y, f.x)/100.0;
+        v2_nrm(&f);
+        a_fx = f.x/20.0+rnd(0.02)-0.01;
+        a_fy = f.y/20.0+rnd(0.02)-0.01;
+        a_fa = -atan2(f.y, f.x)/1000.0;
     } else {
-        brain_predict(a_b, a_f);
+        // print_data(ant);
+        brain_predict(a_b, a_d);
         if(isnan(a_fx)) a_fx=0.0;
         if(isnan(a_fy)) a_fy=0.0;
         if(isnan(a_fa)) a_fa=0.0;
@@ -110,23 +122,28 @@ static void render(ant_t* ant) {
 
 // map some vector+value to perception array
 static void perception_map(ant_t* ant, v2 t, double v) {
-   // angle of target vector
-   double a1 = atan2(a_ny, a_nx);
-   double a2 = atan2(t.y, t.x);
-   double a3 = a1-a2;
-   clamp_angle(&a3);
-   a3/=PI2/VISION_RESOLUTION;
-   a3+=VISION_RESOLUTION/2;
-   // antialias angle between near cells
-   int i0 = floor(a3);
-   int i1 = ceil (a3);
-   double k0 = i1-a3;
-   double k1 = a3-i0;
-   i1%=VISION_RESOLUTION;
-   // printf("% 4.2f [% 02d % 4.2f] [% 02d % 4.2f]", a3, i0, k0, i1, k1);       
-   // angle between head vector and target vector
-   a_vs[i0]+=v*k0;
-   a_vs[i1]+=v*k1;
+
+    t = (v2){t.x - a_px, t.y - a_py};
+    double l = v2_len(&t)/VISION_RANGE;
+    v = v/(1.0+l*l);
+    
+    // angle of target vector
+    double a1 = atan2(a_ny, a_nx);
+    double a2 = atan2(t.y, t.x);
+    double a3 = a1-a2;
+    clamp_angle(&a3);
+    a3/=PI2/VISION_RESOLUTION;
+    a3+=VISION_RESOLUTION/2;
+    // antialias angle between near cells
+    int i0 = floor(a3);
+    int i1 = ceil (a3);
+    double k0 = i1-a3;
+    double k1 = a3-i0;
+    i1%=VISION_RESOLUTION;
+    // printf("% 4.2f [% 02d % 4.2f] [% 02d % 4.2f]", a3, i0, k0, i1, k1);       
+    // angle between head vector and target vector
+    a_vs[i0]+=v*k0;
+    a_vs[i1]+=v*k1;
 }
 
 static void vision_update(ant_t* ant, world_t* world) {
@@ -138,46 +155,55 @@ static void vision_update(ant_t* ant, world_t* world) {
         ant_t* aa = ants[i];
         // the same ant
         if(a_px == aa->p.x && a_py == aa->p.y) continue;
-        v2 t = {aa->p.x - a_px, aa->p.y - a_py};
-        double l = v2_len(&t)/VISION_RANGE;
-        double v = -1.0/(1.0+l*l);
-        perception_map(ant, t, v);
+        perception_map(ant, aa->p,-1.0);
+        // toroidal symmetry 
+        perception_map(ant, (v2){aa->p.x-WIDTH, aa->p.y }, -0.5);
+        perception_map(ant, (v2){aa->p.x+WIDTH, aa->p.y }, -0.5);
+        perception_map(ant, (v2){aa->p.x, aa->p.y-HEIGHT}, -0.5);
+        perception_map(ant, (v2){aa->p.x, aa->p.y+HEIGHT}, -0.5);
 	}
     
 	food_t* food = world->food;
 	for(int i=0; i<world->food_count; i++) {
-        // vector from ant to food
-        v2 t = {food[i].p.x - a_px, food[i].p.y - a_py};
-        double l = v2_len(&t)/VISION_RANGE;
-        double v = 1.0/(1.0+l*l);
-        perception_map(ant, t, v);
+        perception_map(ant, food[i].p, 1.0);
+        // toroidal symmetry
+        perception_map(ant, (v2){food[i].p.x-WIDTH, food[i].p.y }, 1.0);
+        perception_map(ant, (v2){food[i].p.x+WIDTH, food[i].p.y }, 1.0);
+        perception_map(ant, (v2){food[i].p.x, food[i].p.y-HEIGHT}, 1.0);
+        perception_map(ant, (v2){food[i].p.x, food[i].p.y+HEIGHT}, 1.0);
 	}
 
 	double old_sc = a_sc;
 	a_sc = 0.0;
 	for(int i=0; i<VISION_RESOLUTION; i++) {
-        a_sc += a_vs[i]*cos(PI+(double)i/VISION_RESOLUTION*PI2); 
+        // sigmoid
+    	a_vs[i] = tanh(a_vs[i]);
+        a_sc += a_vs[i];//*cos(PI+(double)i/VISION_RESOLUTION*PI2); 
 	}
+	
 	// delta score
     double dsc = a_sc - old_sc;
-	if((!a_b->trained && dsc>0.0)|| (a_b->trained && dsc>a_max_dsc)){
-    	printf("% 03d: % 3.2f\n", a_mid, dsc);
+	if((!a_b->trained && dsc>0.1)|| (a_b->trained && dsc>a_max_dsc)){
+    	printf("%d (%03d: % 3.2f + % 3.2f)\n", a_id, a_mid, old_sc, dsc);
     	a_max_dsc = dsc;
-    	memcpy(&a_mem[a_mid*MEMORY_STEP], a_f, sizeof(double)*MEMORY_STEP);
+    	memcpy(&a_mem[a_mid*MEMORY_STEP], a_d, sizeof(double)*MEMORY_STEP);
     	a_mid = (a_mid+1)%MEMORY_SIZE;
-    	if(a_mid == 0){
+    	if(a_mid == 0) {
         	printf("train\n");
         	brain_train(a_b, a_mem, MEMORY_SIZE);
+        	char buf[256];
+        	sprintf(buf, "ant.%d", a_id);
+        	brain_save(a_b, buf);
     	}
-	} 
+	}
 }
 
 static void ant_vision_render(ant_t* ant) {
     Uint8 r,g,b;
     b = 48;
     v2 f = {a_fx, a_fy};
-    v2_rot(&f, a_a); v2_nrm(&f); v2_mul(&f, 50.0);
-    draw_vector(&a_p, &f);
+    v2_rot(&f, a_a); v2_mul(&f, 1000.0);
+    // draw_vector(&a_p, &f);
 	for(int i=0; i<VISION_RESOLUTION; i++) {
     	// a_vs[i] = cos(PI+(double)i/VISION_RESOLUTION*PI2);
         if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
@@ -195,9 +221,12 @@ static void ant_vision_render(ant_t* ant) {
 
 /// INTERFACE ///
 
+static int id;
 ant_t* ant_create() {
     ant_t* ant = calloc(1, sizeof(ant_t));
+    a_id = id++;
     a_b = brain_create(Y_COUNT, X_COUNT);
+    brain_load(a_b, "basic");
     a_px = rand()%WIDTH;
     a_py = rand()%HEIGHT;
     a_m  = 10.0;

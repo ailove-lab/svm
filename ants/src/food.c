@@ -23,7 +23,6 @@ void food_draw(food_t* f) {
 
 void food_render(food_t* food, int n) {
     SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
-
     for(int i=0; i<n; i++){
         food_draw(&food[i]);
     }
@@ -36,7 +35,7 @@ void food_update(world_t* world) {
             v2* p1 = &world->ants[j]->p;
             v2 pp = {p0->x - p1->x, p0->y - p1->y};
             double l = v2_len(&pp);
-            if(l<30.0) {
+            if(l<20.0) {
                 p0->x = rand()%WIDTH;
                 p0->y = rand()%HEIGHT;
             } 
