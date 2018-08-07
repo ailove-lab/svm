@@ -1,3 +1,6 @@
 [submodule "ants/libsvm"]
 	path = ants/libsvm
 	url = https://github.com/cjlin1/libsvm
+[submodule "ants/nanovg"]
+	path = ants/nanovg
+	url = https://github.com/memononen/nanovg
