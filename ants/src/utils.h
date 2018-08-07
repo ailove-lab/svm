@@ -1,7 +1,7 @@
 #pragma once
 
-#define WIDTH  800
-#define HEIGHT 800
+#define WIDTH  400
+#define HEIGHT 400
 
 #define PI  3.1415926
 #define PI2 PI*2.0

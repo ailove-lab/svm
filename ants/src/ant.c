@@ -204,6 +204,16 @@ static void ant_vision_render(ant_t* ant) {
     v2 f = {a_fx, a_fy};
     v2_rot(&f, a_a); v2_mul(&f, 1000.0);
     // draw_vector(&a_p, &f);
+    int d = 8;
+	for(int i=0; i<VISION_RESOLUTION; i++) {
+        if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
+        else if (a_vs[i] < 0.0) { r =-a_vs[i]*255; g = 0         ;}
+        else                    { r = 0          ; g = 0         ;}
+        SDL_Rect rect = {d+i*(d+1), d+a_id*(d+1), d, d};
+        SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+        SDL_RenderFillRect(renderer, &rect);
+	}
+	d = 4;
 	for(int i=0; i<VISION_RESOLUTION; i++) {
     	// a_vs[i] = cos(PI+(double)i/VISION_RESOLUTION*PI2);
         if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
@@ -212,7 +222,6 @@ static void ant_vision_render(ant_t* ant) {
         double a = (0.5-(double)i/VISION_RESOLUTION)*PI*2.0;
         double dx = 30.0*cos(a+a_a);
         double dy = 30.0*sin(a+a_a);
-        int d = 4;
         SDL_Rect rect = {a_px+dx-d/2, a_py+dy-d/2, d, d};
         SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
         SDL_RenderFillRect(renderer, &rect);
