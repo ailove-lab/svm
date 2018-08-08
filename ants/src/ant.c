@@ -1,10 +1,12 @@
-#include <SDL2/SDL.h>
+#include <nanovg.h>
 
 #include "utils.h"
 #include "world.h"
 #include "brain.h"
 #include "ant.h"
 #include "food.h"
+
+extern NVGcontext* vg;
 
 #define a_id (ant->id  )
 #define a_d  (ant->data)
@@ -37,8 +39,6 @@
 #define a_max_dsc (ant->max_dsc)
 
 #define a_b (ant->brain)
-
-extern SDL_Renderer* renderer;
 
 static double friction = 0.95;
 
@@ -104,19 +104,15 @@ static void update(ant_t* ant) {
 }
 
 static void render(ant_t* ant) {
-    if (a_b->trained) {
-        SDL_SetRenderDrawColor(renderer, 128, 255, 128, SDL_ALPHA_OPAQUE);
-    } else {
-        SDL_SetRenderDrawColor(renderer, 255, 128, 128, SDL_ALPHA_OPAQUE);
-    };
     double s = 10.0;
-    SDL_Point points[] = {
-       {a_px + a_nx*s             , a_py + a_ny*s             },
-       {a_px - a_nx*s - a_ny*s/2.0, a_py - a_ny*s + a_nx*s/2.0},
-       {a_px - a_nx*s + a_ny*s/2.0, a_py - a_ny*s - a_nx*s/2.0}, 
-       {a_px + a_nx*s             , a_py + a_ny*s             },
-    };
-    SDL_RenderDrawLines(renderer, points, 4);
+    nvgBeginPath(vg);
+    nvgMoveTo(vg, a_px + a_nx*s             , a_py + a_ny*s             );
+    nvgLineTo(vg, a_px - a_nx*s - a_ny*s/2.0, a_py - a_ny*s + a_nx*s/2.0);
+    nvgLineTo(vg, a_px - a_nx*s + a_ny*s/2.0, a_py - a_ny*s - a_nx*s/2.0); 
+    nvgLineTo(vg, a_px + a_nx*s             , a_py + a_ny*s             );
+    if (a_b->trained) nvgFillColor(vg, nvgRGBA( 64, 255,  64, 255));
+    else              nvgFillColor(vg, nvgRGBA(255,  64,  64, 255));
+    nvgFill(vg);    
 }
 
 
@@ -199,21 +195,22 @@ static void vision_update(ant_t* ant, world_t* world) {
 }
 
 static void ant_vision_render(ant_t* ant) {
-    Uint8 r,g,b;
+    unsigned char r,g,b;
     b = 48;
     v2 f = {a_fx, a_fy};
     v2_rot(&f, a_a); v2_mul(&f, 1000.0);
     // draw_vector(&a_p, &f);
-    int d = 8;
+    double d = 8;
 	for(int i=0; i<VISION_RESOLUTION; i++) {
         if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
         else if (a_vs[i] < 0.0) { r =-a_vs[i]*255; g = 0         ;}
         else                    { r = 0          ; g = 0         ;}
-        SDL_Rect rect = {d+i*(d+1), d+a_id*(d+1), d, d};
-        SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
-        SDL_RenderFillRect(renderer, &rect);
+        nvgBeginPath(vg);
+        nvgRect(vg, d+i*(d+1), d+a_id*(d+1), d, d);
+        nvgFillColor(vg, nvgRGBA(r,g, b, 255));
+        nvgFill(vg);
 	}
-	d = 4;
+	d = 3.0;
 	for(int i=0; i<VISION_RESOLUTION; i++) {
     	// a_vs[i] = cos(PI+(double)i/VISION_RESOLUTION*PI2);
         if      (a_vs[i] > 0.0) { r=0            ; g = a_vs[i]*255;}
@@ -222,9 +219,10 @@ static void ant_vision_render(ant_t* ant) {
         double a = (0.5-(double)i/VISION_RESOLUTION)*PI*2.0;
         double dx = 30.0*cos(a+a_a);
         double dy = 30.0*sin(a+a_a);
-        SDL_Rect rect = {a_px+dx-d/2, a_py+dy-d/2, d, d};
-        SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
-        SDL_RenderFillRect(renderer, &rect);
+        nvgBeginPath(vg);
+        nvgCircle(vg, a_px+dx, a_py+dy, d);
+        nvgFillColor(vg, nvgRGBA(r,g, b, 255));
+        nvgFill(vg);
 	}
 }
 
@@ -235,7 +233,7 @@ ant_t* ant_create() {
     ant_t* ant = calloc(1, sizeof(ant_t));
     a_id = id++;
     a_b = brain_create(Y_COUNT, X_COUNT);
-    brain_load(a_b, "basic");
+    if(id%2 == 0) brain_load(a_b, "basic");
     a_px = rand()%WIDTH;
     a_py = rand()%HEIGHT;
     a_m  = 10.0;

@@ -1,48 +1,22 @@
-
-#include <SDL2/SDL.h>
-
+#include "engine.h"
 #include "world.h"
 
-SDL_Window*   window   = NULL;
-SDL_Renderer* renderer = NULL;
+world_t* world;
+void update(){
+    world_update(world);
+}
+
+void render() {
+    world_render(world);
+}
 
 int main(int argc, char* argv[]) {
-
-    world_t* world = world_create(3, 3);
-
-    if (SDL_Init(SDL_INIT_VIDEO) == 0) {
-
-        if (SDL_CreateWindowAndRenderer(WIDTH, HEIGHT, 0, &window, &renderer) == 0) {
-            SDL_bool done = SDL_FALSE;
-
-            while (!done) {
-                SDL_Event event;
-
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-                SDL_RenderClear(renderer);
-
-                world_update(world);
-                world_render(world);
-
-                SDL_RenderPresent(renderer);
-                
-                while (SDL_PollEvent(&event)) {
-                    if (event.type == SDL_QUIT) {
-                        done = SDL_TRUE;
-                    }
-                }
-            }
-        }
-
-        if (renderer) {
-            SDL_DestroyRenderer(renderer);
-        }
-        if (window) {
-            SDL_DestroyWindow(window);
-        }
-    }
-    SDL_Quit();
-    
+    world = world_create(5, 5);
+    engine_init();
+    engine_update = update;
+    engine_render = render;    
+    engine_start();
+    engine_deinit();
     world_delete(world);
     return 0;
 }

@@ -43,6 +43,7 @@ void draw_vector(v2* a, v2* b) {
     v2_mul(&t, 3.0);
     v2 p0 = *a;
     v2 p1 = {a->x + b->x, a->y + b->y};
+    /*
     SDL_Point points[] = {
         {p0.x, p0.y},
         {p1.x, p1.y},
@@ -52,6 +53,7 @@ void draw_vector(v2* a, v2* b) {
     };
     SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
     SDL_RenderDrawLines(renderer, points, 5);
+    */
 }
 
 double rnd(double r) {

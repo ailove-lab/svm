@@ -1,7 +1,12 @@
 #pragma once
 
-#define WIDTH  400
-#define HEIGHT 400
+#include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#define WIDTH  800
+#define HEIGHT 800
 
 #define PI  3.1415926
 #define PI2 PI*2.0
