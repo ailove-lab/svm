@@ -1,4 +1,7 @@
 #include <stdio.h>
+
+#include <chipmunk/chipmunk_private.h>
+
 #ifdef NANOVG_GLEW
 #  include <GL/glew.h>
 #endif
@@ -17,8 +20,8 @@ void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
-int blowup     = 0;
-int premult    = 0;
+int blowup  = 0;
+int premult = 0;
 
 GLFWwindow* window;
 NVGcontext* vg = NULL;
@@ -126,4 +129,155 @@ void engine_start() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+}
+
+
+
+static void DrawCircle(
+    cpVect pos, 
+    cpFloat angle, 
+    cpFloat radius, 
+    cpSpaceDebugColor outlineColor, 
+    cpSpaceDebugColor fillColor, 
+    cpDataPointer data) {
+
+    nvgBeginPath(vg);
+    nvgCircle(vg, pos.x, pos.y, radius);
+    nvgStrokeWidth(vg, 1.0);
+    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0xFF));
+    nvgStroke(vg);
+        
+};
+
+void DrawSegment(
+    cpVect a, 
+    cpVect b, 
+    cpSpaceDebugColor color, 
+    cpDataPointer data) {
+
+    nvgBeginPath(vg);
+    nvgMoveTo(vg, a.x, a.y);
+    nvgLineTo(vg, b.x, b.y);
+    nvgStrokeWidth(vg, 1.0);
+    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStroke(vg);
+};
+
+static void DrawFatSegment(
+    cpVect a, 
+    cpVect b,
+    cpFloat radius,
+    cpSpaceDebugColor outlineColor,
+    cpSpaceDebugColor fillColor,
+    cpDataPointer data) {
+
+    nvgBeginPath(vg);
+    nvgMoveTo(vg, a.x, a.y);
+    nvgLineTo(vg, b.x, b.y);
+    nvgStrokeWidth(vg, 4.0);
+    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStroke(vg);
+};
+    
+static void DrawPolygon(
+    int count,
+    const cpVect *verts,
+    cpFloat radius,
+    cpSpaceDebugColor outlineColor,
+    cpSpaceDebugColor fillColor,
+    cpDataPointer data) {
+
+    nvgBeginPath(vg);
+    nvgMoveTo(vg, verts[0].x, verts[0].y);
+    for(int i=1; i<count; i++) {
+        nvgLineTo(vg, verts[i].x, verts[i].y);
+    }
+    nvgLineTo(vg, verts[0].x, verts[0].y);
+    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStroke(vg);
+};
+
+static void DrawDot(
+    cpFloat size,
+    cpVect pos,
+    cpSpaceDebugColor color,
+    cpDataPointer data) {
+
+};
+
+static inline cpSpaceDebugColor RGBAColor(float r, float g, float b, float a){
+	cpSpaceDebugColor color = {r, g, b, a};
+	return color;
+}
+
+static inline cpSpaceDebugColor LAColor(float l, float a){
+	cpSpaceDebugColor color = {l, l, l, a};
+	return color;
+}
+
+static cpSpaceDebugColor
+ColorForShape(cpShape *shape, cpDataPointer data)
+{
+	if(cpShapeGetSensor(shape)){
+		return LAColor(1.0f, 0.1f);
+	} else {
+		cpBody *body = cpShapeGetBody(shape);
+		
+		if(cpBodyIsSleeping(body)){
+			return LAColor(0.2f, 1.0f);
+		} else if(body->sleeping.idleTime > shape->space->sleepTimeThreshold) {
+			return LAColor(0.66f, 1.0f);
+		} else {
+			uint32_t val = (uint32_t)shape->hashid;
+			
+			// scramble the bits up using Robert Jenkins' 32 bit integer hash function
+			val = (val+0x7ed55d16) + (val<<12);
+			val = (val^0xc761c23c) ^ (val>>19);
+			val = (val+0x165667b1) + (val<<5);
+			val = (val+0xd3a2646c) ^ (val<<9);
+			val = (val+0xfd7046c5) + (val<<3);
+			val = (val^0xb55a4f09) ^ (val>>16);
+			
+			float r = (float)((val>>0) & 0xFF);
+			float g = (float)((val>>8) & 0xFF);
+			float b = (float)((val>>16) & 0xFF);
+			
+			float max = (float)cpfmax(cpfmax(r, g), b);
+			float min = (float)cpfmin(cpfmin(r, g), b);
+			float intensity = (cpBodyGetType(body) == CP_BODY_TYPE_STATIC ? 0.15f : 0.75f);
+			
+			// Saturate and scale the color
+			if(min == max){
+				return RGBAColor(intensity, 0.0f, 0.0f, 1.0f);
+			} else {
+				float coef = (float)intensity/(max - min);
+				return RGBAColor(
+					(r - min)*coef,
+					(g - min)*coef,
+					(b - min)*coef,
+					1.0f
+				);
+			}
+		}
+	}
+}
+
+static cpSpaceDebugDrawOptions drawOptions = {
+	DrawCircle,
+	DrawSegment,
+	DrawFatSegment,
+	DrawPolygon,
+	DrawDot,
+	
+	(cpSpaceDebugDrawFlags)(CP_SPACE_DEBUG_DRAW_SHAPES | CP_SPACE_DEBUG_DRAW_CONSTRAINTS | CP_SPACE_DEBUG_DRAW_COLLISION_POINTS),
+	
+	{200.0f/255.0f, 210.0f/255.0f, 230.0f/255.0f, 1.0f},
+	ColorForShape,
+	{0.0f, 0.75f, 0.0f, 1.0f},
+	{1.0f, 0.0f, 0.0f, 1.0f},
+	NULL,
+};
+
+void spaceDraw(cpSpace* space) {
+	cpSpaceDebugDraw(space, &drawOptions);
 }

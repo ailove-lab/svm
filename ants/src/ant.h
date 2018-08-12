@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chipmunk/chipmunk_private.h>
+
 #include "utils.h"
 
 #define VISION_RESOLUTION 16
@@ -14,43 +16,16 @@ typedef struct world_t world_t;
 typedef struct brain_t brain_t;
 
 typedef struct ant_t {
-
     int id;
+    world_t* world;
+    cpFloat radius;
+    cpFloat mass;
+    cpFloat moment;
+    cpBody* body;
+    cpShape* shape;
     
-    brain_t* brain;
-    
-    // mass
-    double m;
-    
-    // absolute position
-    v2 p;    
-    // absotlue normal
-    v2 n;
-    // absolute angle
-    double a;
-
-
-    // velocity
-    v2 v;
-    // angular velocity
-    double va;
-   
-    
-    double data[MEMORY_STEP];
-   
-    // storage for best actions
-
-    // score
-    double sc;
-    double max_dsc;
-    double memory[MEMORY_STEP * MEMORY_SIZE];
-    int mid;
-
 } ant_t;
 
-ant_t* ant_create();
-void ant_delete(ant_t* ant);
-
-void ants_update(world_t* world);
-void ants_render(ant_t** ants, int n);
-void ants_vision_render(ant_t** ant, int n);
+ant_t* antNew();
+void antFree(ant_t* ant);
+void antsUpdate(world_t* world);
