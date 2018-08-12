@@ -1,6 +1,5 @@
 #pragma once
 
-// #include "ant.h"
 #include "food.h"
 
 typedef struct ant_t ant_t;

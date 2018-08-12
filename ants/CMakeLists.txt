@@ -27,4 +27,5 @@ add_executable(main
     src/brain.c 
     src/food.c
     libsvm/svm.cpp)
-target_link_libraries(main nanovg ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} GL glfw m)
+
+target_link_libraries(main nanovg ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} GL glfw m chipmunk)
