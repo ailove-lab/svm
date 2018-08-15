@@ -13,6 +13,6 @@ typedef struct world_t {
 
 world_t* worldNew(int ants_count, int food_count);
 void worldFree(world_t* world);
-void worldUpdate(world_t* world);
+void worldUpdate(world_t* world, float dt);
 void worldRender(world_t* world);
 

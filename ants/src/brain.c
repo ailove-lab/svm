@@ -10,16 +10,16 @@
 #define b_m  (brain->models)
 #define b_t  (brain->trained)
 
-brain_t* brain_create(int y_cnt, int x_cnt) {
+brain_t* brainNew(int y_cnt, int x_cnt) {
     brain_t* brain = calloc(1, sizeof(brain));
     b_xc = x_cnt;
     b_yc = y_cnt;
-    b_m = calloc(y_cnt, sizeof(svm_model*));
-    b_t = false;
+    b_m  = calloc(y_cnt, sizeof(svm_model*));
+    b_t  = false;
     return brain;
 }
 
-void brain_load(brain_t* brain, char* filename) {
+void brainLoad(brain_t* brain, char* filename) {
     char buf[256];
     for(int i=0; i<b_yc; i++) {
         sprintf(buf, "%s.%d.m", filename, i);
@@ -28,7 +28,7 @@ void brain_load(brain_t* brain, char* filename) {
     b_t = true;
 }
 
-void brain_save(brain_t* brain, char* filename) {
+void brainSave(brain_t* brain, char* filename) {
     char buf[256];
     for(int i=0; i<b_yc; i++) {
         sprintf(buf, "%s.%d.m", filename, i);
@@ -36,7 +36,7 @@ void brain_save(brain_t* brain, char* filename) {
     }
 }
 
-void brain_delete(brain_t* brain) {
+void brainFree(brain_t* brain) {
     // clear models
     for(int i=0; i< b_yc; i++) {
        free(b_m[i]);
@@ -50,35 +50,35 @@ void brain_delete(brain_t* brain) {
 // <---b_yc---> <---b_xc--->
 // y0 y1 ... yn x0 x1 ... xm ##
 //              ^yc          ^yc+xc
-void brain_train(brain_t* brain, double* data, int size) {
+void brainTrain(brain_t* brain, double* data, int size) {
     
     svm_parameter param;
     
 	// default values
-	param.svm_type = NU_SVR;
+	param.svm_type    = NU_SVR;
 	param.kernel_type = LINEAR;
-	param.degree = 3;
-	param.gamma = 1.0/b_xc;	// 1/num_features
-	param.coef0 = 0;
+	param.degree      = 3;
+	param.gamma       = 1.0/b_xc;	// 1/num_features
+	param.coef0       = 0;
 
 	// training
-	param.nu = 0.5;
-	param.cache_size = 100;
-	param.C = 1;
-	param.eps = 1e-3;
-	param.p = 0.1;
-	param.shrinking = 0;
-	param.probability = 0;
-	param.nr_weight = 0;
+	param.nu           = 0.5;
+	param.cache_size   = 100;
+	param.C            = 1;
+	param.eps          = 1e-3;
+	param.p            = 0.1;
+	param.shrinking    = 0;
+	param.probability  = 0;
+	param.nr_weight    = 0;
 	param.weight_label = NULL;
-	param.weight = NULL;
+	param.weight       = NULL;
 	//cross_validation = 0;
-	
+
     int data_step = b_yc + b_xc;
-    int x_step    = b_xc + 1;
+    int x_step    = b_xc +    1;
+
     // for each separate problem y0 .. yn
     for(int i=0; i<b_yc; i++) {
-        
         // fill problems x -> y 
         double y[size];
         svm_node* x[size]; // pointers to x_space
@@ -92,7 +92,6 @@ void brain_train(brain_t* brain, double* data, int size) {
             x_space[j*x_step+b_xc] = (svm_node){-1, 0.0}; // end marker
         }
         svm_problem problem = {.l=size, .y=y, .x=x};
-
     	const char* error_msg = svm_check_parameter(&problem, &param);
     	if(error_msg) {
     		fprintf(stderr,"ERROR: %s\n", error_msg);
@@ -107,7 +106,7 @@ void brain_train(brain_t* brain, double* data, int size) {
 
 // data
 // y0 y1 ... yn x0 x1 .. xn      
-void brain_predict(brain_t* brain, double* data) {
+void brainPredict(brain_t* brain, double* data) {
     if(!b_t) {
         return;
     };    
@@ -115,6 +114,10 @@ void brain_predict(brain_t* brain, double* data) {
     for(int i=0; i<b_xc; i++) x[i] = (svm_node){i, data[b_yc+i]};
     x[b_xc] = (svm_node){-1, 0.0}; // end marker
     for(int i=0; i<b_yc; i++) {
-        data[i] = tanh(svm_predict(b_m[i], x));
+        for(int j=0; j<b_yc; j++) printf("% 2.1f ", data[i]); printf("-> ");
+        double p = svm_predict(b_m[i], x);
+        data[i] = isnan(p) ? 0.0 : tanh(p);
+        for(int j=0; j<b_yc; j++) printf("% 2.1f ", data[j]); printf("\n");
+        // data[i] = tanh(svm_predict(b_m[i], x));
     }    
 }

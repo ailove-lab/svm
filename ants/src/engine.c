@@ -13,8 +13,9 @@
 
 #include "engine.h"
 
-void (*engine_update)() = 0;
-void (*engine_render)() = 0;
+void (*engine_update)(float dt) = NULL;
+void (*engine_render)(float dt) = NULL;
+void (*engine_key)(int key, int action) = NULL;
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -25,6 +26,7 @@ int premult = 0;
 
 GLFWwindow* window;
 NVGcontext* vg = NULL;
+int font = -1;
 double prevt = 0;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -32,10 +34,9 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 	NVG_NOTUSED(mods);
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		blowup = !blowup;
 	if (key == GLFW_KEY_P && action == GLFW_PRESS)
 		premult = !premult;
+    if(engine_key!=NULL) engine_key(key, action);
 }
 
 int engine_init () {
@@ -80,8 +81,8 @@ int engine_init () {
 		printf("Could not init nanovg.\n");
 		return -1;
 	}
-
-	glfwSwapInterval(0);
+    font = nvgCreateFont(vg, "sans", "Roboto-Regular.ttf");
+	//glfwSwapInterval(0);
 
 	glfwSetTime(0);
 	prevt = glfwGetTime();
@@ -105,7 +106,7 @@ void engine_start() {
 		dt = t - prevt;
 		prevt = t;
           
-		if(engine_update!=NULL) engine_update();
+		if(engine_update!=NULL) engine_update(dt);
 		
 		glfwGetCursorPos(window, &mx, &my);
 		glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -123,15 +124,21 @@ void engine_start() {
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
-        if(engine_render!=NULL) engine_render();
+		nvgFontSize(vg, 20.0);
+		nvgFontFace(vg, "sans");
+		nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+
+        char fps[32];
+        sprintf(fps, "%4.1f fps", 1.0/dt);
+		nvgText(vg, 10.0, 10.0, fps, NULL);
+
+        if(engine_render!=NULL) engine_render(dt);
 		nvgEndFrame(vg);
 	
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 }
-
-
 
 static void DrawCircle(
     cpVect pos, 
@@ -143,8 +150,10 @@ static void DrawCircle(
 
     nvgBeginPath(vg);
     nvgCircle(vg, pos.x, pos.y, radius);
+    nvgMoveTo(vg, pos.x, pos.y);
+    nvgLineTo(vg, pos.x+cos(angle)*radius, pos.y+sin(angle)*radius);
     nvgStrokeWidth(vg, 1.0);
-    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0xFF));
+    nvgStrokeColor(vg, nvgRGBAf(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a));
     nvgStroke(vg);
         
 };
@@ -159,7 +168,7 @@ void DrawSegment(
     nvgMoveTo(vg, a.x, a.y);
     nvgLineTo(vg, b.x, b.y);
     nvgStrokeWidth(vg, 1.0);
-    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStrokeColor(vg, nvgRGBAf(color.r, color.g, color.b, color.a));
     nvgStroke(vg);
 };
 
@@ -175,7 +184,7 @@ static void DrawFatSegment(
     nvgMoveTo(vg, a.x, a.y);
     nvgLineTo(vg, b.x, b.y);
     nvgStrokeWidth(vg, 4.0);
-    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStrokeColor(vg, nvgRGBAf(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a));
     nvgStroke(vg);
 };
     
@@ -193,16 +202,21 @@ static void DrawPolygon(
         nvgLineTo(vg, verts[i].x, verts[i].y);
     }
     nvgLineTo(vg, verts[0].x, verts[0].y);
-    nvgStrokeColor(vg, nvgRGBA(0xFF, 0xFF, 0xFF, 0x80));
+    nvgStrokeColor(vg, nvgRGBAf(outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a));
     nvgStroke(vg);
 };
 
-static void DrawDot(
+void DrawDot(
     cpFloat size,
     cpVect pos,
     cpSpaceDebugColor color,
     cpDataPointer data) {
 
+    nvgBeginPath(vg);
+    nvgCircle(vg, pos.x, pos.y, size);
+    nvgStrokeWidth(vg, 1.0);
+    nvgStrokeColor(vg, nvgRGBAf(color.r, color.g, color.b, color.a));
+    nvgStroke(vg);
 };
 
 static inline cpSpaceDebugColor RGBAColor(float r, float g, float b, float a){
