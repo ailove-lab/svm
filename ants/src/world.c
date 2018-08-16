@@ -46,7 +46,7 @@ world_t* worldNew(int ants_count, int food_count) {
 	cpBody *staticBody = cpSpaceGetStaticBody(w_space);
 	cpShape *shape;
 	for(int i=0; i<food_count; i++){
-		cpBody *body = add_box(w_space, 20, 1.0);
+		cpBody *body = add_box(w_space, 20+rand()%10, 1.0);
 		
 		// cpConstraint *pivot = cpSpaceAddConstraint(w_space, cpPivotJointNew2(staticBody, body, cpvzero, cpvzero));
 		// cpConstraintSetMaxBias(pivot, 0); // disable joint correction

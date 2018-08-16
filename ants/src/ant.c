@@ -14,6 +14,7 @@
 #define a_size   (ant->size)
 #define a_moment (ant->moment)
 #define a_body   (ant->body)
+#define a_p      (ant->body->p)
 #define a_shape  (ant->shape)
 #define a_brain  (ant->brain)
 #define a_fx     (ant->fx)
@@ -92,8 +93,8 @@ void antPercepetion(ant_t* ant) {
         cpVect start = a_body->p; 
     	cpVect end = start;
     	cpFloat aaa = i*VISION_ANGLE/2.0 + aa;
-        start.x += cos(aaa)*11.0;
-        start.y += sin(aaa)*11.0;
+        start.x += cos(aaa)*10.0;
+        start.y += sin(aaa)*10.0;
 
         end.x += cos(aaa)*VISION_RANGE;
         end.y += sin(aaa)*VISION_RANGE;
@@ -103,7 +104,7 @@ void antPercepetion(ant_t* ant) {
             v = 1.0-cpvdist(start, segInfo.point)/VISION_RANGE;
             if(shape->filter.categories == 1) v *= -1.0;
     	};
-    	a_v[j]+=(v-a_v[j])*0.5;
+    	a_v[j]+=(v-a_v[j])*VISION_DAMPING;
 	}
 }
 
@@ -121,20 +122,44 @@ static void collectPositiveExperience(ant_t* ant) {
     // measure surrounding's score
     double score = 0.0;
     for(int j=0; j<VISION_RESOLUTION; j++) {
-        score += fabs(a_v[j]);
+        score += a_v[j];
     }
     // score decreesing, means we moving away from the objects
-    if (score - a_vs[0] < 0.5) rememberSitutation(ant);
+    // if (score - a_vs[0] < 1.0) 
+    if(a_fx > 0.0) rememberSitutation(ant);
 
     a_vs[0] = score;
     
+}
+static void attractor(ant_t* ant) {
+   double min = 1000.0;
+   double max =-1000.0;
+   int min_i = VISION_RESOLUTION/2;
+   int max_i = VISION_RESOLUTION/2;
+   for(int i=0; i<VISION_RESOLUTION; i++){
+       if(min>fabs(a_v[i])) {
+          min = fabs(a_v[i]);
+          min_i = i;
+       }
+       if(max<a_v[i]) {
+          max = a_v[i];
+          max_i = i;
+       }
+   }
+   // rotate to minimum
+   a_fa = (double)(min_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
+   //a_fa-= (double)(max_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
+   a_fx = (1.0-a_fa*a_fa)*0.25;
+   a_fy = a_fa*0.25;
+   a_fa*= 0.5;
+   
 }
 
 void antThinking(ant_t* ant) {
 
     if(!a_brain->trained) {
         collectPositiveExperience(ant);
-        if(a_mid == MEMORY_SIZE-1) brainTrain(a_brain, ant->memory, MEMORY_SIZE);
+        //if(a_mid == MEMORY_SIZE-1) brainTrain(a_brain, ant->memory, MEMORY_SIZE);
     }
 
     if(a_brain->trained) {
@@ -144,6 +169,7 @@ void antThinking(ant_t* ant) {
         // a_fa = 0.0;
         // printf("%f %f %f\n", a_fx, a_fy, a_fa);
     } else {
+        attractor(ant);
         //a_fx = rand()%10 ? 0.0 :  1.0;
         //a_fx = rand()%10 ? 0.0 : -0.5;
         //a_fa = rand()%50 ? 0.0 :  1.0;
@@ -161,6 +187,8 @@ void antUpdate(ant_t* ant) {
     antPercepetion(ant);
     antThinking(ant);
     antAction(ant);
+    if(a_p.x>WIDTH || a_p.x<0.0) a_p.x = rand()%WIDTH;
+    if(a_p.y>WIDTH || a_p.y<0.0) a_p.y = rand()%HEIGHT;
 }
 
 void antsUpdate(world_t* world){

@@ -113,11 +113,11 @@ void brainPredict(brain_t* brain, double* data) {
     svm_node x[b_xc+1];
     for(int i=0; i<b_xc; i++) x[i] = (svm_node){i, data[b_yc+i]};
     x[b_xc] = (svm_node){-1, 0.0}; // end marker
+    for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("-> ");
     for(int i=0; i<b_yc; i++) {
-        for(int j=0; j<b_yc; j++) printf("% 2.1f ", data[i]); printf("-> ");
         double p = svm_predict(b_m[i], x);
         data[i] = isnan(p) ? 0.0 : tanh(p);
-        for(int j=0; j<b_yc; j++) printf("% 2.1f ", data[j]); printf("\n");
         // data[i] = tanh(svm_predict(b_m[i], x));
     }    
+    for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("\n");
 }
