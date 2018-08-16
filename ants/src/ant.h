@@ -8,7 +8,7 @@
 #define VISION_LAYERS     1
 #define VISION_ANGLE      PI*2.0
 #define VISION_RANGE      300.0
-#define VISION_DAMPING    0.1
+#define VISION_DAMPING    0.5
 #define Y_COUNT           3
 #define X_COUNT           VISION_RESOLUTION 
 #define MEMORY_SIZE       1000

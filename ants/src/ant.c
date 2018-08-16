@@ -50,6 +50,7 @@ ant_t* antNew(world_t* world) {
     a_shape = cpSpaceAddShape(a_world->space, cpCircleShapeNew(a_body, a_size, cpvzero));
     cpShapeSetFriction(a_shape, 0.7);
     a_shape->filter.categories = 1;
+    cpShapeSetUserData(a_shape, ant);
 
 	// cpBody *staticBody = cpSpaceGetStaticBody(world->space);
 	// cpConstraint *pivot = cpSpaceAddConstraint(world->space, cpPivotJointNew2(staticBody, a_body, cpvzero, cpvzero));
@@ -129,13 +130,14 @@ static void collectPositiveExperience(ant_t* ant) {
     if(a_fx > 0.0) rememberSitutation(ant);
 
     a_vs[0] = score;
-    
 }
+
 static void attractor(ant_t* ant) {
    double min = 1000.0;
    double max =-1000.0;
-   int min_i = VISION_RESOLUTION/2;
-   int max_i = VISION_RESOLUTION/2;
+   int vr2   = VISION_RESOLUTION/2;
+   int min_i = vr2;
+   int max_i = vr2;
    for(int i=0; i<VISION_RESOLUTION; i++){
        if(min>fabs(a_v[i])) {
           min = fabs(a_v[i]);
@@ -147,11 +149,9 @@ static void attractor(ant_t* ant) {
        }
    }
    // rotate to minimum
-   a_fa = (double)(min_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
+   a_fa = (double)(min_i-vr2)/(double)(vr2);
    //a_fa-= (double)(max_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
-   a_fx = (1.0-a_fa*a_fa)*0.25;
-   a_fy = a_fa*0.25;
-   a_fa*= 0.5;
+   a_fx = (abs(min_i - vr2)<4) ? (1.0-a_fa*a_fa)*0.5 : 0.0;
    
 }
 
@@ -159,7 +159,8 @@ void antThinking(ant_t* ant) {
 
     if(!a_brain->trained) {
         collectPositiveExperience(ant);
-        //if(a_mid == MEMORY_SIZE-1) brainTrain(a_brain, ant->memory, MEMORY_SIZE);
+        // memory filled, train brain
+        if(a_mid == MEMORY_SIZE-1) brainTrain(a_brain, ant->memory, MEMORY_SIZE);
     }
 
     if(a_brain->trained) {

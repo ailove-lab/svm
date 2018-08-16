@@ -56,7 +56,7 @@ void brainTrain(brain_t* brain, double* data, int size) {
     
 	// default values
 	param.svm_type    = NU_SVR;
-	param.kernel_type = LINEAR;
+	param.kernel_type = RBF;
 	param.degree      = 3;
 	param.gamma       = 1.0/b_xc;	// 1/num_features
 	param.coef0       = 0;
