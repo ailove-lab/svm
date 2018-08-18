@@ -17,12 +17,13 @@
 #define a_p      (ant->body->p)
 #define a_shape  (ant->shape)
 #define a_brain  (ant->brain)
-#define a_fx     (ant->fx)
-#define a_fy     (ant->fy)
-#define a_fa     (ant->fa)
+#define a_c      (ant->cortex)
+#define a_fx     (a_c[0])
+#define a_fy     (a_c[1])
+#define a_fa     (a_c[2])
 #define a_v      (ant->vision)
 #define a_vs     (ant->vision_scores)
-#define a_m(i)   (ant->memory[a_mid*MEMORY_STEP + (i)])
+#define a_m(i)   (ant->memory[a_mid*CORTEX_SIZE + (i)])
 #define a_mid    (ant->memory_id)
 
 extern NVGcontext* vg;
@@ -30,10 +31,13 @@ extern NVGcontext* vg;
 /// INTERFACE ///
 
 static int id = 0;
-ant_t* antNew(world_t* world) {
+
+ant_t* 
+antNew(world_t* world) {
     ant_t* ant = calloc(1, sizeof(ant_t));
 
     a_id    = id++;
+    a_v     = &a_c[Y_COUNT];
     a_world = world;
     a_mass  =  1;
     a_size  = 10;
@@ -51,46 +55,40 @@ ant_t* antNew(world_t* world) {
     cpShapeSetFriction(a_shape, 0.7);
     a_shape->filter.categories = 1;
     cpShapeSetUserData(a_shape, ant);
-
-	// cpBody *staticBody = cpSpaceGetStaticBody(world->space);
-	// cpConstraint *pivot = cpSpaceAddConstraint(world->space, cpPivotJointNew2(staticBody, a_body, cpvzero, cpvzero));
-	// cpConstraintSetMaxBias(pivot, 0); // disable joint correction
-	// cpConstraintSetMaxForce(pivot, 10.0f); // emulate linear friction
-    // cpConstraint *gear = cpSpaceAddConstraint(world->space, cpGearJointNew(staticBody, a_body, 0.0f, 1.0f));
-    // cpConstraintSetMaxBias(gear, 0); // disable joint correction
-    // cpConstraintSetMaxForce(gear, 50.0f); // emulate angular friction
+    cpShapeSetCollisionType(a_shape, ANT);
 
     a_brain = brainNew(Y_COUNT, X_COUNT);
     
     return ant;
 };
 
-void antFree(ant_t* ant) {
+void 
+antFree(ant_t* ant) {
    cpShapeFree(a_shape);
    cpBodyFree(a_body);
    brainFree(a_brain);
    free(ant);
 };
 
-void antMove(ant_t* ant, double lx, double ly) {
-    // double aa = a_body->a;
-    // double fx = lx*cos(aa)-ly*sin(aa); 
-    // double fy = ly*cos(aa)+lx*sin(aa);
+void 
+antMove(ant_t* ant, double lx, double ly) {
     cpBodyApplyForceAtLocalPoint(a_body, cpv(lx, ly), cpvzero);
-    //cpBodyApplyImpulseAtLocalPoint(a_body, cpv(lx, ly), cpvzero);
 };
 
-void antRotate(ant_t* ant, double a){
+void 
+antRotate(ant_t* ant, double a){
     cpBodySetTorque(a_body, a);
 };
 
-void antPercepetion(ant_t* ant) {
+void
+antPercepetion(ant_t* ant) {
     // Ant vision
     cpFloat aa   = a_body->a;
     cpVect start = a_body->p; 
 	cpSegmentQueryInfo segInfo = {};
 	int j = 0;
 	for(double i=-1.0;i<=1.0; i+=2.0/(double)(VISION_RESOLUTION-1), j++) {
+
         cpVect start = a_body->p; 
     	cpVect end = start;
     	cpFloat aaa = i*VISION_ANGLE/2.0 + aa;
@@ -99,63 +97,79 @@ void antPercepetion(ant_t* ant) {
 
         end.x += cos(aaa)*VISION_RANGE;
         end.y += sin(aaa)*VISION_RANGE;
-        double v = 0.0; 
+        double v0 = 0.0;
+        double v1 = 0.0;
         cpShape* shape;
     	if(shape = cpSpaceSegmentQueryFirst(a_space, start, end, -1, CP_SHAPE_FILTER_ALL, &segInfo)){
-            v = 1.0-cpvdist(start, segInfo.point)/VISION_RANGE;
-            if(shape->filter.categories == 1) v *= -1.0;
+            v0 = 1.0-cpvdist(start, segInfo.point)/VISION_RANGE;
+            if(shape->type == FOOD) v1 = v0;
+            if(shape->type == ANT ) v1 =-v0;
     	};
-    	a_v[j]+=(v-a_v[j])*VISION_DAMPING;
+    	a_v[j+0*VISION_RESOLUTION]+=(v0-a_v[j+0*VISION_RESOLUTION])*VISION_DAMPING;
+    	a_v[j+1*VISION_RESOLUTION]+=(v1-a_v[j+1*VISION_RESOLUTION])*VISION_DAMPING;
 	}
 }
 
-static void rememberSitutation(ant_t* ant) {
-    // a_m(i) -> ant->memory[MEMORY_STEP*ant->memory_id+i]
-    a_m(0) = a_fx;
-    a_m(1) = a_fy;
-    a_m(2) = a_fa;
-    memcpy(&a_m(3), a_v, sizeof(double)*VISION_RESOLUTION);
+static void 
+rememberSitutation(ant_t* ant) {
+    // a_m >> ant_memory[a_mid*CORTEX_SIZE+0]
+    memcpy(&a_m(0), a_c, sizeof(double)*CORTEX_SIZE);
     a_mid = (a_mid+1) % MEMORY_SIZE;
 }
 
-static void collectPositiveExperience(ant_t* ant) {
+
+static void 
+onBBQuery(cpShape* shape, void* data) {
+    *(double*)data+= 1.0;
+}
+
+static void 
+collectPositiveExperience(ant_t* ant) {
 
     // measure surrounding's score
     double score = 0.0;
+    // cpSpaceBBQuery(a_space, cpBBNewForCircle(a_body->p, 100.0), CP_SHAPE_FILTER_ALL, onBBQuery, &score);
     for(int j=0; j<VISION_RESOLUTION; j++) {
-        score += a_v[j];
+        score += fabs(a_v[j]);
     }
     // score decreesing, means we moving away from the objects
-    // if (score - a_vs[0] < 1.0) 
-    if(a_fx > 0.0) rememberSitutation(ant);
+    if(score - a_vs[0] < 0.0) 
+        rememberSitutation(ant);
 
     a_vs[0] = score;
 }
 
-static void attractor(ant_t* ant) {
-   double min = 1000.0;
-   double max =-1000.0;
-   int vr2   = VISION_RESOLUTION/2;
-   int min_i = vr2;
-   int max_i = vr2;
+static void 
+attractor(ant_t* ant) {
+   int vr2 = VISION_RESOLUTION/2;
+   int j = 1;
+   double x = 0.0; 
+   double y = 0.0;
+   double v;
    for(int i=0; i<VISION_RESOLUTION; i++){
-       if(min>fabs(a_v[i])) {
-          min = fabs(a_v[i]);
-          min_i = i;
+       double a = (double)(i-vr2)/(double)(vr2);
+       // avoid walls
+       v = a_v[i+0*VISION_RESOLUTION];
+       if (v>0.75) {
+           x += -v*cos(a)*0.1;
+           y += -v*sin(a)*0.1;
        }
-       if(max<a_v[i]) {
-          max = a_v[i];
-          max_i = i;
-       }
+       // attract to food
+       v = a_v[i+1*VISION_RESOLUTION];
+       x += v*cos(a);
+       y += v*sin(a);
    }
-   // rotate to minimum
-   a_fa = (double)(min_i-vr2)/(double)(vr2);
+   
+   // rotate to food
+   a_fa = atan2(y, x);
    //a_fa-= (double)(max_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
-   a_fx = (abs(min_i - vr2)<4) ? (1.0-a_fa*a_fa)*0.5 : 0.0;
+   a_fx = 0.5;
+   // a_fx = sqrt(x*x + y*y)/(double)VISION_RESOLUTION;
    
 }
 
-void antThinking(ant_t* ant) {
+void 
+antThinking(ant_t* ant) {
 
     if(!a_brain->trained) {
         collectPositiveExperience(ant);
@@ -165,16 +179,8 @@ void antThinking(ant_t* ant) {
 
     if(a_brain->trained) {
         brainPredict(a_brain, &a_fx);
-        // a_fx = 0.0;
-        // a_fy = 0.0;
-        // a_fa = 0.0;
-        // printf("%f %f %f\n", a_fx, a_fy, a_fa);
     } else {
         attractor(ant);
-        //a_fx = rand()%10 ? 0.0 :  1.0;
-        //a_fx = rand()%10 ? 0.0 : -0.5;
-        //a_fa = rand()%50 ? 0.0 :  1.0;
-        //a_fa = rand()%50 ? 0.0 : -1.0;
     }
 }
 

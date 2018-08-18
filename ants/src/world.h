@@ -9,6 +9,8 @@ typedef struct ant_t ant_t;
 typedef struct world_t {
     cpSpace* space;
     cpArray* ants;
+    cpArray* food;
+    cpArray* boxes;
 } world_t;
 
 world_t* worldNew(int ants_count, int food_count);

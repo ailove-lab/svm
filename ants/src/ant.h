@@ -5,20 +5,21 @@
 #include "utils.h"
 
 #define VISION_RESOLUTION 64
-#define VISION_LAYERS     1
-#define VISION_ANGLE      PI*2.0
-#define VISION_RANGE      300.0
+#define VISION_LAYERS     2
+#define VISION_ANGLE      PI/2.0
+#define VISION_RANGE      500.0
 #define VISION_DAMPING    0.5
 #define Y_COUNT           3
-#define X_COUNT           VISION_RESOLUTION 
-#define MEMORY_SIZE       1000
-#define MEMORY_STEP       (Y_COUNT + X_COUNT)
+#define X_COUNT           (VISION_RESOLUTION*VISION_LAYERS)
+#define CORTEX_SIZE       (Y_COUNT+X_COUNT)
+#define MEMORY_SIZE       5000
 
 typedef struct world_t world_t;
 typedef struct brain_t brain_t;
 
 typedef struct ant_t {
     int id;
+
     world_t* world;
     brain_t* brain;
     
@@ -28,12 +29,12 @@ typedef struct ant_t {
     cpFloat  moment;
     cpBody*  body;
     cpShape* shape;
-
-    double fx, fy, fa;
-    double vision[VISION_RESOLUTION*VISION_LAYERS];
-    double vision_scores[2];
-    int    memory_id;
-    double memory[MEMORY_STEP * MEMORY_SIZE];
+   
+    double  cortex[CORTEX_SIZE];
+    double* vision;
+    double  vision_scores[2];
+    int     memory_id;
+    double  memory[CORTEX_SIZE * MEMORY_SIZE];
 } ant_t;
 
 ant_t* antNew();

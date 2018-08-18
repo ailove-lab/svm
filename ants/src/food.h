@@ -1,12 +1,16 @@
 #pragma once
 
+#include <chipmunk/chipmunk.h>
+
 #include "utils.h"
 
-typedef struct world_t world_t;
 typedef struct {
-    v2 p;
-    float a;
+    // physics
+    cpFloat  size;
+    cpFloat  mass;
+    cpBody*  body;
+    cpShape* shape;
 } food_t;
 
-void food_render(food_t* food, int n);
-void food_update(world_t* world);
+food_t* foodNew(cpSpace* space);
+void foodFree(food_t* food);

@@ -2,24 +2,33 @@
 #include <stdlib.h>
 #include <nanovg.h>
 
-#include "world.h"
-#include "ant.h"
 #include "food.h"
+
+#define f_size  (food->size)
+#define f_mass  (food->mass)
+#define f_body  (food->body)
+#define f_shape (food->shape)
 
 extern NVGcontext* vg;
 
-void food_draw(food_t* f) {   
-    nvgBeginPath(vg);
-    nvgCircle(vg, f->p.x, f->p.y, 5.0);
-    nvgFillColor(vg, nvgRGBA(128,128, 128, 255));
-    nvgFill(vg);
+food_t* foodNew(cpSpace* space) {
+    food_t* food = calloc(1, sizeof(food_t));
+
+    f_size = 10.0;
+    f_mass =  1.0;
+
+    f_body = cpSpaceAddBody(space, cpBodyNew(f_mass, cpMomentForBox(f_mass, f_size, f_size)));
+    cpBodySetPosition(f_body, cpv(rnd(WIDTH), rnd(HEIGHT)));    
+
+    f_shape = cpSpaceAddShape(space, cpBoxShapeNew(f_body, f_size, f_size, 0.0));
+    cpShapeSetElasticity(f_shape, 0.0f);
+    cpShapeSetFriction(f_shape, 0.7f);
+    cpShapeSetCollisionType(f_shape, FOOD);
+    
+    return food;
 }
 
-void food_render(food_t* food, int n) {
-    for(int i=0; i<n; i++){
-        food_draw(&food[i]);
-    }
+void foodFree(food_t* food){
+    free(food);
 }
 
-void food_update(world_t* world) {
-}

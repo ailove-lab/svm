@@ -82,7 +82,7 @@ void brainTrain(brain_t* brain, double* data, int size) {
         // fill problems x -> y 
         double y[size];
         svm_node* x[size]; // pointers to x_space
-        svm_node  x_space[size*x_step];
+        svm_node* x_space = calloc(size*x_step,sizeof(svm_node));
         for(int j=0; j<size; j++) {
             y[j] = data[j*data_step+i];
             x[j] = &x_space[j*x_step]; // row start
@@ -113,11 +113,11 @@ void brainPredict(brain_t* brain, double* data) {
     svm_node x[b_xc+1];
     for(int i=0; i<b_xc; i++) x[i] = (svm_node){i, data[b_yc+i]};
     x[b_xc] = (svm_node){-1, 0.0}; // end marker
-    for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("-> ");
+    // for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("-> ");
     for(int i=0; i<b_yc; i++) {
         double p = svm_predict(b_m[i], x);
         data[i] = isnan(p) ? 0.0 : tanh(p);
         // data[i] = tanh(svm_predict(b_m[i], x));
     }    
-    for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("\n");
+    // for(int i=0; i<b_yc; i++) printf("% 2.1f ", data[i]); printf("\n");
 }

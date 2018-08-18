@@ -32,10 +32,9 @@ double prevt = 0;
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	NVG_NOTUSED(scancode);
 	NVG_NOTUSED(mods);
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_P && action == GLFW_PRESS)
-		premult = !premult;
+	}
     if(engine_key!=NULL) engine_key(key, action);
 }
 
@@ -90,12 +89,15 @@ int engine_init () {
 	return 0;
 }
 
-void engine_deinit() {
+void 
+engine_deinit() {
 	nvgDeleteGL2(vg);
+    glfwDestroyWindow(window);
 	glfwTerminate();
 }
 
-void engine_start() {
+void 
+engine_start() {
     while (!glfwWindowShouldClose(window)) {
 		double mx, my, t, dt;
 		int winWidth, winHeight;
@@ -117,10 +119,8 @@ void engine_start() {
 
 		// Update and render
 		glViewport(0, 0, fbWidth, fbHeight);
-		if (premult)
-			glClearColor(0,0,0,0);
-		else
-			glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
+		if (premult) glClearColor(0,0,0,0);
+		else glClearColor(0.3f, 0.3f, 0.32f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
 		nvgBeginFrame(vg, winWidth, winHeight, pxRatio);
@@ -128,9 +128,9 @@ void engine_start() {
 		nvgFontFace(vg, "sans");
 		nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 
-        char fps[32];
-        sprintf(fps, "%4.1f fps", 1.0/dt);
-		nvgText(vg, 10.0, 10.0, fps, NULL);
+        // char fps[32];
+        // sprintf(fps, "%4.1f fps", 1.0/dt);
+		// nvgText(vg, 10.0, 10.0, fps, NULL);
 
         if(engine_render!=NULL) engine_render(dt);
 		nvgEndFrame(vg);
@@ -140,7 +140,11 @@ void engine_start() {
 	}
 }
 
-static void DrawCircle(
+
+// CHIPMUNK //
+
+static void 
+DrawCircle(
     cpVect pos, 
     cpFloat angle, 
     cpFloat radius, 
@@ -158,7 +162,8 @@ static void DrawCircle(
         
 };
 
-void DrawSegment(
+void 
+DrawSegment(
     cpVect a, 
     cpVect b, 
     cpSpaceDebugColor color, 
@@ -172,7 +177,8 @@ void DrawSegment(
     nvgStroke(vg);
 };
 
-static void DrawFatSegment(
+static void 
+DrawFatSegment(
     cpVect a, 
     cpVect b,
     cpFloat radius,
@@ -188,7 +194,8 @@ static void DrawFatSegment(
     nvgStroke(vg);
 };
     
-static void DrawPolygon(
+static void 
+DrawPolygon(
     int count,
     const cpVect *verts,
     cpFloat radius,
@@ -206,7 +213,8 @@ static void DrawPolygon(
     nvgStroke(vg);
 };
 
-void DrawDot(
+void 
+DrawDot(
     cpFloat size,
     cpVect pos,
     cpSpaceDebugColor color,
@@ -219,19 +227,20 @@ void DrawDot(
     nvgStroke(vg);
 };
 
-static inline cpSpaceDebugColor RGBAColor(float r, float g, float b, float a){
+static inline cpSpaceDebugColor 
+RGBAColor(float r, float g, float b, float a){
 	cpSpaceDebugColor color = {r, g, b, a};
 	return color;
 }
 
-static inline cpSpaceDebugColor LAColor(float l, float a){
+static inline cpSpaceDebugColor 
+LAColor(float l, float a){
 	cpSpaceDebugColor color = {l, l, l, a};
 	return color;
 }
 
 static cpSpaceDebugColor
-ColorForShape(cpShape *shape, cpDataPointer data)
-{
+ColorForShape(cpShape *shape, cpDataPointer data) {
 	if(cpShapeGetSensor(shape)){
 		return LAColor(1.0f, 0.1f);
 	} else {

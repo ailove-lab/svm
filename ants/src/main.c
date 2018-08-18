@@ -4,26 +4,28 @@
 #include "world.h"
 #include "ant.h"
 
-world_t* world;
+world_t* world = NULL;
 
 void update(float dt){
-    worldUpdate(world, dt);
+    if(world) worldUpdate(world, dt);
 }
 
 void render(float dt) {
-    worldRender(world);
+    if(world) worldRender(world);
 }
 
 void key(int key, int action) {
+    if(!world) return; 
     ant_t* a = world->ants->arr[0];    
-	if (key == GLFW_KEY_KP_8) a->fx = !action ? 0.0 : 1.0;
-	if (key == GLFW_KEY_KP_5) a->fx = !action ? 0.0 :-1.0;
-	if (key == GLFW_KEY_KP_4) a->fa = !action ? 0.0 :-1.0;
-	if (key == GLFW_KEY_KP_6) a->fa = !action ? 0.0 : 1.0;
+	if (key == GLFW_KEY_KP_8) a->cortex[0] = !action ? 0.0 : 1.0;
+	if (key == GLFW_KEY_KP_5) a->cortex[0] = !action ? 0.0 :-1.0;
+	if (key == GLFW_KEY_KP_4) a->cortex[2] = !action ? 0.0 :-1.0;
+	if (key == GLFW_KEY_KP_6) a->cortex[2] = !action ? 0.0 : 1.0;
 }
 
 int main(int argc, char* argv[]) {
-    world = worldNew(2, 50);
+
+    world = worldNew(5, 20);
 
     engine_init();
     engine_update = update;
@@ -33,6 +35,7 @@ int main(int argc, char* argv[]) {
     engine_deinit();
     
     worldFree(world);
+
     return 0;
 }
 
