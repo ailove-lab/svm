@@ -16,11 +16,14 @@ void render(float dt) {
 
 void key(int key, int action) {
     if(!world) return; 
-    ant_t* a = world->ants->arr[0];    
+    ant_t* a = worldGetAnt(world);    
 	if (key == GLFW_KEY_KP_8) a->cortex[0] = !action ? 0.0 : 1.0;
 	if (key == GLFW_KEY_KP_5) a->cortex[0] = !action ? 0.0 :-1.0;
 	if (key == GLFW_KEY_KP_4) a->cortex[2] = !action ? 0.0 :-1.0;
 	if (key == GLFW_KEY_KP_6) a->cortex[2] = !action ? 0.0 : 1.0;
+	
+	if (key == GLFW_KEY_RIGHT && !action) worldNextAnt(world);
+	if (key == GLFW_KEY_LEFT  && !action) worldPrevAnt(world);
 }
 
 int main(int argc, char* argv[]) {
@@ -38,5 +41,6 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+
 
 

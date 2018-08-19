@@ -11,10 +11,14 @@ typedef struct world_t {
     cpArray* ants;
     cpArray* food;
     cpArray* boxes;
+
+    int current_ant_id;
 } world_t;
 
 world_t* worldNew(int ants_count, int food_count);
-void worldFree(world_t* world);
-void worldUpdate(world_t* world, float dt);
-void worldRender(world_t* world);
-
+void   worldFree   (world_t* world);
+void   worldUpdate (world_t* world, float dt);
+void   worldRender (world_t* world);
+ant_t* worldGetAnt (world_t* world);
+void   worldNextAnt(world_t* world);
+void   worldPrevAnt(world_t* world);

@@ -52,7 +52,7 @@ antNew(world_t* world) {
     cpBodySetAngle(a_body, (double)rand()/(double)RAND_MAX*PI*2.0);
 
     a_shape = cpSpaceAddShape(a_world->space, cpCircleShapeNew(a_body, a_size, cpvzero));
-    cpShapeSetFriction(a_shape, 0.7);
+    cpShapeSetFriction(a_shape, 0.1);
     a_shape->filter.categories = 1;
     cpShapeSetUserData(a_shape, ant);
     cpShapeSetCollisionType(a_shape, ANT);
@@ -84,7 +84,12 @@ void
 antPercepetion(ant_t* ant) {
     // Ant vision
     cpFloat aa   = a_body->a;
-    cpVect start = a_body->p; 
+    cpVect start = a_body->p;
+
+    // avoiding self ray-query by temporary disabling collision 
+    cpShapeFilter f = a_shape->filter;
+    a_shape->filter = CP_SHAPE_FILTER_NONE;
+    
 	cpSegmentQueryInfo segInfo = {};
 	int j = 0;
 	for(double i=-1.0;i<=1.0; i+=2.0/(double)(VISION_RESOLUTION-1), j++) {
@@ -92,22 +97,25 @@ antPercepetion(ant_t* ant) {
         cpVect start = a_body->p; 
     	cpVect end = start;
     	cpFloat aaa = i*VISION_ANGLE/2.0 + aa;
-        start.x += cos(aaa)*10.0;
-        start.y += sin(aaa)*10.0;
 
         end.x += cos(aaa)*VISION_RANGE;
         end.y += sin(aaa)*VISION_RANGE;
         double v0 = 0.0;
         double v1 = 0.0;
-        cpShape* shape;
-    	if(shape = cpSpaceSegmentQueryFirst(a_space, start, end, -1, CP_SHAPE_FILTER_ALL, &segInfo)){
+
+        cpShape* shape = cpSpaceSegmentQueryFirst(a_space, start, end, -1.0, CP_SHAPE_FILTER_ALL, &segInfo);
+
+    	if(shape) {
             v0 = 1.0-cpvdist(start, segInfo.point)/VISION_RANGE;
             if(shape->type == FOOD) v1 = v0;
             if(shape->type == ANT ) v1 =-v0;
+            v0 =pow(v0, 4.0);
     	};
-    	a_v[j+0*VISION_RESOLUTION]+=(v0-a_v[j+0*VISION_RESOLUTION])*VISION_DAMPING;
-    	a_v[j+1*VISION_RESOLUTION]+=(v1-a_v[j+1*VISION_RESOLUTION])*VISION_DAMPING;
+    	a_v[0*VISION_RESOLUTION+j]+=(v0-a_v[0*VISION_RESOLUTION+j])*VISION_DAMPING;
+    	a_v[1*VISION_RESOLUTION+j]+=(v1-a_v[1*VISION_RESOLUTION+j])*VISION_DAMPING;
 	}
+	// enable collision back
+    a_shape->filter = f;
 }
 
 static void 
@@ -146,25 +154,35 @@ attractor(ant_t* ant) {
    double x = 0.0; 
    double y = 0.0;
    double v;
+   double max_v;
+   double max_a;
    for(int i=0; i<VISION_RESOLUTION; i++){
-       double a = (double)(i-vr2)/(double)(vr2);
-       // avoid walls
+       double a = (double)(i-vr2)/(double)(vr2)*VISION_ANGLE/2.0;
+
+       // distractor
        v = a_v[i+0*VISION_RESOLUTION];
-       if (v>0.75) {
-           x += -v*cos(a)*0.1;
-           y += -v*sin(a)*0.1;
-       }
-       // attract to food
+       x -= v*cos(a)*0.5;
+       y -= v*sin(a)*0.5;
+
+       // attractor
        v = a_v[i+1*VISION_RESOLUTION];
-       x += v*cos(a);
-       y += v*sin(a);
+       x += v*cos(a)*1.0;
+       y += v*sin(a)*1.0;
+
+       // max value / angle
+       if(v > max_v) {
+           max_a = a;
+           max_v = v;
+       }
    }
-   
+   ant->ta += (max_a      - ant->ta)*0.5;
+   ant->aa += (atan2(y,x) - ant->aa)*0.5;
+   // printf("%3.1f %3.1f\n", max_v, max_a);
    // rotate to food
-   a_fa = atan2(y, x);
+   a_fa = tanh(ant->aa);
    //a_fa-= (double)(max_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
-   a_fx = 0.5;
-   // a_fx = sqrt(x*x + y*y)/(double)VISION_RESOLUTION;
+   a_fx += (tanh(x)*0.5-a_fx)*0.5;
+   a_fy += (tanh(y)*0.5-a_fy)*0.5;
    
 }
 

@@ -6,7 +6,7 @@
 
 #define VISION_RESOLUTION 64
 #define VISION_LAYERS     2
-#define VISION_ANGLE      PI/2.0
+#define VISION_ANGLE      PI*2.0
 #define VISION_RANGE      500.0
 #define VISION_DAMPING    0.5
 #define Y_COUNT           3
@@ -35,6 +35,8 @@ typedef struct ant_t {
     double  vision_scores[2];
     int     memory_id;
     double  memory[CORTEX_SIZE * MEMORY_SIZE];
+    double  ta; // target angle
+    double  aa; // average angle
 } ant_t;
 
 ant_t* antNew();

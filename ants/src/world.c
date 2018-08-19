@@ -22,7 +22,7 @@ worldNew(int ants_count, int food_count) {
     world_t* world = calloc(sizeof(world_t), 1);
     w_space = cpSpaceNew();
 
-    cpSpaceSetDamping(w_space, 0.1);
+    cpSpaceSetDamping(w_space, 0.5);
     
     w_ants  = cpArrayNew(ants_count);   
     w_food  = cpArrayNew(food_count);   
@@ -108,16 +108,37 @@ worldUpdate(world_t* world, float dt) {
     antsUpdate(world);
 }
 
+ant_t* worldGetAnt(world_t* world) {
+    return world->ants->arr[world->current_ant_id];
+}
+
+void worldNextAnt(world_t* world){
+    printf("%d\n", world->current_ant_id);
+    world->current_ant_id++; 
+    if(world->current_ant_id>=w_ants->num) world->current_ant_id-=w_ants->num;
+}
+
+void worldPrevAnt(world_t* world) {
+    world->current_ant_id--;
+    if(world->current_ant_id<0) world->current_ant_id+=w_ants->num;
+}
+
+
+// PRIVATE
+
 static inline cpSpaceDebugColor 
 RGBAColor(float r, float g, float b, float a){
     cpSpaceDebugColor color = {r, g, b, a};
     return color;
 }
 
+static inline void drawVector(double x, double y, double dx, double dy, NVGcolor c);
 void 
 worldRender(world_t* world) {
     spaceDraw(w_space);
-    ant_t* a = w_ants->arr[0];
+    
+    ant_t* a = worldGetAnt(world);
+
     float d = 8.0;
     for(int i=0; i<VISION_LAYERS; i++) {
         for(int j=0; j<VISION_RESOLUTION;  j++) {
@@ -130,5 +151,44 @@ worldRender(world_t* world) {
             nvgFill(vg);
         }
     }
+
+    // local force
+    double aa = a->body->a; // ant angle
+    double px = a->body->p.x; 
+    double py = a->body->p.y; 
+    double fx = a->cortex[0];
+    double fy = a->cortex[1];
+    double dx = fx*cos(aa) - fy*sin(aa);
+    double dy = fy*cos(aa) + fx*sin(aa);
+    
+    drawVector(
+        px, py, 
+        dx*100.0, dy*100.0,
+        nvgRGBAf(0.0, 0.0, 1.0, 1.0));
+
+    
+    // target angle
+    dx = cos(aa + a->ta);
+    dy = sin(aa + a->ta);
+    drawVector( 
+        px+dx*20.0, py+dy*20.0,
+           dx*10.0,    dy*10.0,
+        nvgRGBAf(0.0, 1.0, 0.0, 1.0));
+    
+    // avoid angle
+    dx = cos(aa + a->aa);
+    dy = sin(aa + a->aa);
+    drawVector( 
+        px+dx*20.0, py+dy*20.0,
+           dx*10.0,    dy*10.0,
+        nvgRGBAf(1.0, 0.0, 0.0, 1.0));
+}
+
+static inline void drawVector(double x, double y, double dx, double dy, NVGcolor c) {
+    nvgBeginPath(vg);
+    nvgMoveTo(vg, x, y);
+    nvgLineTo(vg, x+dx, y+dy);
+    nvgStrokeColor(vg, c);
+    nvgStroke(vg);
 }
 
