@@ -115,20 +115,20 @@ worldGetAnt(world_t* world) {
 }
 
 void 
-worldNextAnt(world_t* world){
+worldSelectNextAnt(world_t* world){
     printf("%d\n", world->current_ant_id);
     world->current_ant_id++; 
     if(world->current_ant_id>=w_ants->num) world->current_ant_id-=w_ants->num;
 }
 
 void 
-worldPrevAnt(world_t* world) {
+worldSelectPrevAnt(world_t* world) {
     world->current_ant_id--;
     if(world->current_ant_id<0) world->current_ant_id+=w_ants->num;
 }
 
 void 
-worldSwitchAntBrain(world_t* world) {
+worldSwitchSelectedAntBrain(world_t* world) {
     antSwitchBrain(worldGetAnt(world));
 }
 
