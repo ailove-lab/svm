@@ -24,6 +24,7 @@ void key(int key, int action) {
 	
 	if (key == GLFW_KEY_RIGHT && !action) worldNextAnt(world);
 	if (key == GLFW_KEY_LEFT  && !action) worldPrevAnt(world);
+	if (key == GLFW_KEY_SPACE && !action) worldSwitchAntBrain(world);
 }
 
 int main(int argc, char* argv[]) {

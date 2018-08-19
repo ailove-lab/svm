@@ -73,6 +73,7 @@ worldNew(int ants_count, int food_count) {
     return world;
 }
 
+
 static cpBool 
 onAntCollision(cpArbiter* arb, cpSpace* space, void* data) {
     printf("%d x %d\n", arb->a->type, arb->b->type);
@@ -108,21 +109,28 @@ worldUpdate(world_t* world, float dt) {
     antsUpdate(world);
 }
 
-ant_t* worldGetAnt(world_t* world) {
+ant_t* 
+worldGetAnt(world_t* world) {
     return world->ants->arr[world->current_ant_id];
 }
 
-void worldNextAnt(world_t* world){
+void 
+worldNextAnt(world_t* world){
     printf("%d\n", world->current_ant_id);
     world->current_ant_id++; 
     if(world->current_ant_id>=w_ants->num) world->current_ant_id-=w_ants->num;
 }
 
-void worldPrevAnt(world_t* world) {
+void 
+worldPrevAnt(world_t* world) {
     world->current_ant_id--;
     if(world->current_ant_id<0) world->current_ant_id+=w_ants->num;
 }
 
+void 
+worldSwitchAntBrain(world_t* world) {
+    antSwitchBrain(worldGetAnt(world));
+}
 
 // PRIVATE
 
@@ -160,28 +168,34 @@ worldRender(world_t* world) {
     double fy = a->cortex[1];
     double dx = fx*cos(aa) - fy*sin(aa);
     double dy = fy*cos(aa) + fx*sin(aa);
-    
+
+    nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
+    nvgFillColor(vg, nvgRGBAf(1.0, 1.0, 1.0, 1.0));
+    nvgFontSize(vg, 14.0);
+    nvgText(vg, px, py-10.0, antTrained(a) ? "SVM" : "ATR", NULL);
+     
     drawVector(
         px, py, 
         dx*100.0, dy*100.0,
         nvgRGBAf(0.0, 0.0, 1.0, 1.0));
 
-    
-    // target angle
-    dx = cos(aa + a->ta);
-    dy = sin(aa + a->ta);
-    drawVector( 
-        px+dx*20.0, py+dy*20.0,
-           dx*10.0,    dy*10.0,
-        nvgRGBAf(0.0, 1.0, 0.0, 1.0));
-    
-    // avoid angle
-    dx = cos(aa + a->aa);
-    dy = sin(aa + a->aa);
-    drawVector( 
-        px+dx*20.0, py+dy*20.0,
-           dx*10.0,    dy*10.0,
-        nvgRGBAf(1.0, 0.0, 0.0, 1.0));
+    if(!antTrained(a)) {    
+        // target angle
+        dx = cos(aa + a->ta);
+        dy = sin(aa + a->ta);
+        drawVector( 
+            px+dx*20.0, py+dy*20.0,
+               dx*10.0,    dy*10.0,
+            nvgRGBAf(0.0, 1.0, 0.0, 1.0));
+        
+        // avoid angle
+        dx = cos(aa + a->aa);
+        dy = sin(aa + a->aa);
+        drawVector( 
+            px+dx*20.0, py+dy*20.0,
+               dx*10.0,    dy*10.0,
+            nvgRGBAf(1.0, 0.0, 0.0, 1.0));
+    }
 }
 
 static inline void drawVector(double x, double y, double dx, double dy, NVGcolor c) {

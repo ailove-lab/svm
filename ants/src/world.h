@@ -22,3 +22,4 @@ void   worldRender (world_t* world);
 ant_t* worldGetAnt (world_t* world);
 void   worldNextAnt(world_t* world);
 void   worldPrevAnt(world_t* world);
+void   worldSwitchAntBrain(world_t* world);

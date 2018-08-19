@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <chipmunk/chipmunk_private.h>
 
 #include "utils.h"
@@ -43,4 +44,6 @@ ant_t* antNew();
 void antFree   (ant_t* ant);
 void antMove   (ant_t* ant, double lx, double ly);
 void antRotate (ant_t* ant, double a);
+bool antTrained(ant_t* ant);
+void antSwitchBrain(ant_t* ant);
 void antsUpdate(world_t* world);

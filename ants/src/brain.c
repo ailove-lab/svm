@@ -24,6 +24,7 @@ void brainLoad(brain_t* brain, char* filename) {
     for(int i=0; i<b_yc; i++) {
         sprintf(buf, "%s.%d.m", filename, i);
         b_m[i] = svm_load_model(buf);
+        if(!b_m[i]) return;
     }
     b_t = true;
 }

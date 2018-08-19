@@ -58,17 +58,29 @@ antNew(world_t* world) {
     cpShapeSetCollisionType(a_shape, ANT);
 
     a_brain = brainNew(Y_COUNT, X_COUNT);
-    
+    char name[32];
+    sprintf(name, "brain.%d", a_id);
+    brainLoad(a_brain, name); 
     return ant;
 };
 
 void 
 antFree(ant_t* ant) {
-   cpShapeFree(a_shape);
-   cpBodyFree(a_body);
-   brainFree(a_brain);
-   free(ant);
+    cpShapeFree(a_shape);
+    cpBodyFree(a_body);
+    brainFree(a_brain);
+    free(ant);
 };
+
+bool 
+antTrained(ant_t* ant) {
+    return a_brain->trained;
+}
+
+void 
+antSwitchBrain(ant_t* ant) {
+    a_brain->trained = !a_brain->trained;
+}
 
 void 
 antMove(ant_t* ant, double lx, double ly) {
@@ -92,7 +104,7 @@ antPercepetion(ant_t* ant) {
     
 	cpSegmentQueryInfo segInfo = {};
 	int j = 0;
-	for(double i=-1.0;i<=1.0; i+=2.0/(double)(VISION_RESOLUTION-1), j++) {
+	for(double i=-1.0; i<=1.0; i+=2.0/(double)(VISION_RESOLUTION-1), j++) {
 
         cpVect start = a_body->p; 
     	cpVect end = start;
@@ -194,7 +206,7 @@ antThinking(ant_t* ant) {
         if(a_mid == MEMORY_SIZE-1) {
             brainTrain(a_brain, ant->memory, MEMORY_SIZE);
             char name[32];
-            sprintf(name, "brain.%0d", a_id);
+            sprintf(name, "brain.%d", a_id);
             brainSave(a_brain, name);
         }
     }
