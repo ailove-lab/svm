@@ -125,7 +125,6 @@ rememberSitutation(ant_t* ant) {
     a_mid = (a_mid+1) % MEMORY_SIZE;
 }
 
-
 static void 
 onBBQuery(cpShape* shape, void* data) {
     *(double*)data+= 1.0;
@@ -138,7 +137,7 @@ collectPositiveExperience(ant_t* ant) {
     double score = 0.0;
     // cpSpaceBBQuery(a_space, cpBBNewForCircle(a_body->p, 100.0), CP_SHAPE_FILTER_ALL, onBBQuery, &score);
     for(int j=0; j<VISION_RESOLUTION; j++) {
-        score += fabs(a_v[j]);
+        score += a_v[j+VISION_RESOLUTION];
     }
     // score decreesing, means we moving away from the objects
     if(score - a_vs[0] < 0.0) 
@@ -192,7 +191,12 @@ antThinking(ant_t* ant) {
     if(!a_brain->trained) {
         collectPositiveExperience(ant);
         // memory filled, train brain
-        if(a_mid == MEMORY_SIZE-1) brainTrain(a_brain, ant->memory, MEMORY_SIZE);
+        if(a_mid == MEMORY_SIZE-1) {
+            brainTrain(a_brain, ant->memory, MEMORY_SIZE);
+            char name[32];
+            sprintf(name, "brain.%0d", a_id);
+            brainSave(a_brain, name);
+        }
     }
 
     if(a_brain->trained) {
