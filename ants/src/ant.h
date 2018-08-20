@@ -22,8 +22,9 @@ typedef struct ant_t {
     int id;
 
     world_t* world;
-    brain_t* brain;
-    
+    brain_t* brains[3];
+    int      brain_id;
+
     // physics
     cpFloat  size;
     cpFloat  mass;
@@ -31,19 +32,20 @@ typedef struct ant_t {
     cpBody*  body;
     cpShape* shape;
    
-    double  cortex[CORTEX_SIZE];
-    double* vision;
-    double  vision_scores[2];
-    int     memory_id;
-    double  memory[CORTEX_SIZE * MEMORY_SIZE];
-    double  ta; // target angle
-    double  aa; // average angle
+    float  cortex[CORTEX_SIZE];
+    float* vision;
+    float  vision_scores[2];
+    int    memory_id;
+    float  memory[CORTEX_SIZE * MEMORY_SIZE];
+    float  ta; // target angle
+    float  aa; // average angle
 } ant_t;
 
 ant_t* antNew();
+
 void antFree   (ant_t* ant);
-void antMove   (ant_t* ant, double lx, double ly);
-void antRotate (ant_t* ant, double a);
+// void antMove   (ant_t* ant, double lx, double ly);
+// void antRotate (ant_t* ant, double a);
 bool antTrained(ant_t* ant);
 void antSwitchBrain(ant_t* ant);
 void antsUpdate(world_t* world);

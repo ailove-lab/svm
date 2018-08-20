@@ -24,7 +24,10 @@ add_executable(main
     src/utils.c 
     src/world.c 
     src/ant.c 
-    src/brain.c 
+    src/brain.c
+    src/brain_atr.c
+    src/brain_svm.c
+    src/brain_ann.c 
     src/food.c
     src/box.c
     libsvm/svm.cpp)

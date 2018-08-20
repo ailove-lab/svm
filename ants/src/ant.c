@@ -16,7 +16,9 @@
 #define a_body   (ant->body)
 #define a_p      (ant->body->p)
 #define a_shape  (ant->shape)
-#define a_brain  (ant->brain)
+#define a_brains (ant->brains)
+#define a_bid    (ant->brain_id)
+#define a_brain  (ant->brains[a_bid])
 #define a_c      (ant->cortex)
 #define a_fx     (a_c[0])
 #define a_fy     (a_c[1])
@@ -57,10 +59,11 @@ antNew(world_t* world) {
     cpShapeSetUserData(a_shape, ant);
     cpShapeSetCollisionType(a_shape, ANT);
 
-    a_brain = brainNew(Y_COUNT, X_COUNT);
-    char name[32];
-    sprintf(name, "brain.%d", a_id);
-    brainLoad(a_brain, name); 
+    a_brains[0] = brainNew(BRAIN_ATR, X_COUNT, Y_COUNT);
+    a_brains[1] = brainNew(BRAIN_SVM, X_COUNT, Y_COUNT);
+    a_brains[2] = brainNew(BRAIN_ANN, X_COUNT, Y_COUNT);
+    a_bid = 0;
+
     return ant;
 };
 
@@ -68,7 +71,9 @@ void
 antFree(ant_t* ant) {
     cpShapeFree(a_shape);
     cpBodyFree(a_body);
-    brainFree(a_brain);
+    brainFree(a_brains[0]);
+    brainFree(a_brains[1]);
+    brainFree(a_brains[2]);
     free(ant);
 };
 
@@ -79,18 +84,18 @@ antTrained(ant_t* ant) {
 
 void 
 antSwitchBrain(ant_t* ant) {
-    a_brain->trained = !a_brain->trained;
+    a_bid = (a_bid+1)%3;
 }
 
-void 
-antMove(ant_t* ant, double lx, double ly) {
-    cpBodyApplyForceAtLocalPoint(a_body, cpv(lx, ly), cpvzero);
-};
+// void 
+// antMove(ant_t* ant, double lx, double ly) {
+//     cpBodyApplyForceAtLocalPoint(a_body, cpv(lx, ly), cpvzero);
+// };
 
-void 
-antRotate(ant_t* ant, double a){
-    cpBodySetTorque(a_body, a);
-};
+// void 
+// antRotate(ant_t* ant, double a){
+//     cpBodySetTorque(a_body, a);
+// };
 
 void
 antPercepetion(ant_t* ant) {
@@ -158,64 +163,21 @@ collectPositiveExperience(ant_t* ant) {
     a_vs[0] = score;
 }
 
-static void 
-attractor(ant_t* ant) {
-   int vr2 = VISION_RESOLUTION/2;
-   int j = 1;
-   double x = 0.0; 
-   double y = 0.0;
-   double v;
-   double max_v;
-   double max_a;
-   for(int i=0; i<VISION_RESOLUTION; i++){
-       double a = (double)(i-vr2)/(double)(vr2)*VISION_ANGLE/2.0;
-
-       // distractor
-       v = a_v[i+0*VISION_RESOLUTION];
-       x -= v*cos(a)*0.5;
-       y -= v*sin(a)*0.5;
-
-       // attractor
-       v = a_v[i+1*VISION_RESOLUTION];
-       x += v*cos(a)*1.0;
-       y += v*sin(a)*1.0;
-
-       // max value / angle
-       if(v > max_v) {
-           max_a = a;
-           max_v = v;
-       }
-   }
-   ant->ta += (max_a      - ant->ta)*0.5;
-   ant->aa += (atan2(y,x) - ant->aa)*0.5;
-   // printf("%3.1f %3.1f\n", max_v, max_a);
-   // rotate to food
-   a_fa = tanh(ant->aa);
-   //a_fa-= (double)(max_i-VISION_RESOLUTION/2)/(double)(VISION_RESOLUTION/2);
-   a_fx += (tanh(x)*0.5-a_fx)*0.5;
-   a_fy += (tanh(y)*0.5-a_fy)*0.5;
-   
-}
-
 void 
 antThinking(ant_t* ant) {
 
-    if(!a_brain->trained) {
-        collectPositiveExperience(ant);
-        // memory filled, train brain
-        if(a_mid == MEMORY_SIZE-1) {
-            brainTrain(a_brain, ant->memory, MEMORY_SIZE);
-            char name[32];
-            sprintf(name, "brain.%d", a_id);
-            brainSave(a_brain, name);
-        }
-    }
+    // if(!a_brain->trained) {
+    //     collectPositiveExperience(ant);
+    //     // memory filled, train brain
+    //     if(a_mid == MEMORY_SIZE-1) {
+    //         brainTrain(a_brain, ant->memory, MEMORY_SIZE);
+    //         char name[32];
+    //         sprintf(name, "brain.%d", a_id);
+    //         brainSave(a_brain, name);
+    //     }
+    // }
 
-    if(a_brain->trained) {
-        brainPredict(a_brain, &a_fx);
-    } else {
-        attractor(ant);
-    }
+    brainPredict(a_brain, a_c);
 }
 
 void antAction(ant_t* ant) {
