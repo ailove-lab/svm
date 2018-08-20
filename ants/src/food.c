@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <nanovg.h>
 
+
+#include "globals.h"
 #include "food.h"
 
 #define f_size  (food->size)

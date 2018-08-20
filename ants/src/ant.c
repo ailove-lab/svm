@@ -2,7 +2,6 @@
 
 #include "ant.h"
 
-#include "utils.h"
 #include "world.h"
 #include "brain.h"
 #include "food.h"
@@ -87,16 +86,6 @@ antSwitchBrain(ant_t* ant) {
     a_bid = (a_bid+1)%3;
 }
 
-// void 
-// antMove(ant_t* ant, double lx, double ly) {
-//     cpBodyApplyForceAtLocalPoint(a_body, cpv(lx, ly), cpvzero);
-// };
-
-// void 
-// antRotate(ant_t* ant, double a){
-//     cpBodySetTorque(a_body, a);
-// };
-
 void
 antPercepetion(ant_t* ant) {
     // Ant vision
@@ -165,18 +154,7 @@ collectPositiveExperience(ant_t* ant) {
 
 void 
 antThinking(ant_t* ant) {
-
-    // if(!a_brain->trained) {
-    //     collectPositiveExperience(ant);
-    //     // memory filled, train brain
-    //     if(a_mid == MEMORY_SIZE-1) {
-    //         brainTrain(a_brain, ant->memory, MEMORY_SIZE);
-    //         char name[32];
-    //         sprintf(name, "brain.%d", a_id);
-    //         brainSave(a_brain, name);
-    //     }
-    // }
-
+    printf("%d - %d\n", a_bid, a_brain->type);
     brainPredict(a_brain, a_c);
 }
 

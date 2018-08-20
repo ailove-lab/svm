@@ -1,8 +1,13 @@
+// simple attractor brain
+// moving forvard positive traits and away from negative 
+
 #include <stdio.h>
 #include <math.h>
 
+#include "globals.h"
 #include "brain.h"
 #include "brain_shorts.h"
+
 
 static void 
 load(brain_t* brain, char* filename) {
@@ -24,39 +29,29 @@ train(brain_t* brain, float* data, int size) {
 
 static void 
 predict(brain_t* brain, float* data) {
-    /*
-    int vr2 = VISION_RESOLUTION/2;
-    int j = 1;
+    // vision have two layers
+    int vr = VISION_RESOLUTION;
+    // center of view field
+    int vh = VISION_RESOLUTION>>1;
+    
     float x = 0.0; 
     float y = 0.0;
     float v;
-    float max_v;
-    float max_a;
-    for(int i=0; i<VISION_RESOLUTION; i++){
-        float a = (float)(i-vr2)/(float)(vr2)*VISION_ANGLE/2.0;
-        // distractor
-        v = a_v[i+0*VISION_RESOLUTION];
+    for(int i=0; i<vr; i++){
+        // angle
+        float a = (float)(i-vh)/(float)(vh)*PI;
+        // distractor, move away from obstacles
+        v = data[b_yc+i];   // first vsion layer
         x -= v*cos(a)*0.5;
-        y -= v*sin(a)*0.5;
-        // attractor
-        v = a_v[i+1*VISION_RESOLUTION];
+        y -= v*sin(a)*0.5;      
+        // attractor, moving forward to food
+        v = data[b_yc+vr+i]; // second vision layer
         x += v*cos(a)*1.0;
         y += v*sin(a)*1.0;
-        // max value / angle
-        if(v > max_v) {
-            max_a = a;
-            max_v = v;
-        }
     }
-    ant->ta += (max_a      - ant->ta)*0.5;
-    ant->aa += (atan2(y,x) - ant->aa)*0.5;
-    // printf("%3.1f %3.1f\n", max_v, max_a);
-    // rotate to food
-    a_fa = tanh(ant->aa);
-    //a_fa-= (float)(max_i-VISION_RESOLUTION/2)/(float)(VISION_RESOLUTION/2);
-    a_fx += (tanh(x)*0.5-a_fx)*0.5;
-    a_fy += (tanh(y)*0.5-a_fy)*0.5;
-    */
+    data[0] += (tanh(x)*0.5 - data[0]) * 0.5;
+    data[1] += (tanh(y)*0.5 - data[1]) * 0.5;
+    data[2] += (atan2(y, x) - data[2]) * 0.5;
 }
 
 static brain_vt vt = {
@@ -69,6 +64,7 @@ static brain_vt vt = {
 
 void
 brainAtrInit(brain_t* brain) {
+    b_tp = BRAIN_ATR; 
     b_vt = &vt;
     b_t  = true;
 }

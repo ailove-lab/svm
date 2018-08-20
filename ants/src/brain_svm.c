@@ -138,6 +138,7 @@ static brain_vt vt = {
 
 void 
 brainSvmInit(brain_t* brain) {
+    b_tp = BRAIN_SVM; 
     b_vt = &vt;
     b_t  = false;
     brain->data = calloc(1, sizeof(data_t));

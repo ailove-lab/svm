@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <nanovg.h>
 
+
+#include "globals.h"
 #include "box.h"
 
 #define b_size  (box->size)

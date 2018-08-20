@@ -172,7 +172,8 @@ worldRender(world_t* world) {
     nvgTextAlign(vg, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
     nvgFillColor(vg, nvgRGBAf(1.0, 1.0, 1.0, 1.0));
     nvgFontSize(vg, 14.0);
-    nvgText(vg, px, py-10.0, antTrained(a) ? "SVM" : "ATR", NULL);
+    int bid = a->brain_id;
+    nvgText(vg, px, py-10.0, (!bid) ?  "ATR" : bid == 1 ? "SVM" : "ANN" , NULL);
      
     drawVector(
         px, py, 

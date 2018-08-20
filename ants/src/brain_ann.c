@@ -32,6 +32,7 @@ static brain_vt vt = {
 
 void 
 brainAnnInit(brain_t* brain) {
+    b_tp = BRAIN_ANN;
     b_vt = &vt;
     b_t  = false;
 }

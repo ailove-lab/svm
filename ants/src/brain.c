@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "brain.h"
@@ -15,9 +16,9 @@ brainNew(enum brain_type type, int x_cnt, int y_cnt) {
     b_yc = y_cnt;
 
     switch(type) {
-        case BRAIN_ATR: brainAtrInit(brain);
-        case BRAIN_SVM: brainSvmInit(brain);
-        case BRAIN_ANN: brainAnnInit(brain);
+        case BRAIN_ATR: brainAtrInit(brain); break;
+        case BRAIN_SVM: brainSvmInit(brain); break;
+        case BRAIN_ANN: brainAnnInit(brain); break;
     }
 
     return brain;
@@ -33,5 +34,5 @@ brainFree(brain_t* brain) {
 
 void 
 brainPredict(brain_t* brain, float* data) {
-     b_vt->predict(brain, data);
+    b_vt->predict(brain, data);
 }
