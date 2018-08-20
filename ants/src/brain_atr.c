@@ -39,7 +39,7 @@ predict(brain_t* brain, float* data) {
     float v;
     for(int i=0; i<vr; i++){
         // angle
-        float a = (float)(i-vh)/(float)(vh)*PI;
+        float a = (float)(i-vh)/(float)(vh)*VISION_ANGLE/2.0;
         // distractor, move away from obstacles
         v = data[b_yc+i];   // first vsion layer
         x -= v*cos(a)*0.5;
@@ -49,9 +49,10 @@ predict(brain_t* brain, float* data) {
         x += v*cos(a)*1.0;
         y += v*sin(a)*1.0;
     }
-    data[0] += (tanh(x)*0.5 - data[0]) * 0.5;
-    data[1] += (tanh(y)*0.5 - data[1]) * 0.5;
-    data[2] += (atan2(y, x) - data[2]) * 0.5;
+    float a = atan2(y, x);
+    data[0] += (tanh(x)*0.1 - data[0]) * 0.5;
+    data[1] += (tanh(y)*0.1 - data[1]) * 0.5;
+    data[2] += (a           - data[2]) * 0.5;
 }
 
 static brain_vt vt = {
